@@ -4,6 +4,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from ..config import fsb_config
 from ..db.store import Store
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,16 @@ async def send_to_canvas(wsId: str, wfId: str, body: SendToCanvasRequest = None)
     session_id = body.sessionId if body and body.sessionId else wfId
     output_dir = body.outputDir if body and body.outputDir else f"exports/{session_id}"
 
+    if fsb_config.STANDALONE_MODE:
+        logger.info("send-to-canvas (standalone): wf=%s session=%s", wfId, session_id)
+        return {
+            "success": True,
+            "sessionId": session_id,
+            "exportedCount": 0,
+            "exportPath": "",
+            "standalone": True,
+        }
+
     from ..engine.artifact_client import export_session
     result = await export_session(session_id=session_id, output_dir=output_dir)
     if not result.get("success"):
@@ -68,6 +79,16 @@ async def sync_to_project(wsId: str, body: SyncToProjectRequest):
     ws = await store.get_workspace(wsId)
     if not ws:
         raise HTTPException(status_code=404, detail="workspace not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("sync-to-project (standalone): ws=%s project=%s", wsId, body.projectId)
+        return {
+            "success": True,
+            "synced": 0,
+            "failed": 0,
+            "projectId": body.projectId,
+            "standalone": True,
+        }
 
     from ..engine.artifact_client import list_artifacts_by_source, move_artifact_to_kb
 
@@ -108,6 +129,18 @@ async def create_artifact(wsId: str, body: CreateArtifactRequest):
     ws = await store.get_workspace(wsId)
     if not ws:
         raise HTTPException(status_code=404, detail="workspace not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("create-artifact (standalone): ws=%s name=%s", wsId, body.name)
+        return {
+            "success": True,
+            "artifact": {
+                "artifact_id": f"fsb_stub_{body.name}",
+                "name": body.name,
+                "type": body.type,
+            },
+            "standalone": True,
+        }
 
     from ..engine.artifact_client import create_external_artifact
     result = await create_external_artifact(

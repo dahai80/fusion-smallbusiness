@@ -109,13 +109,7 @@ async def execution_history(wsId: str, workflowId: str = None, offset: int = 0, 
     return items
 
 
-@router.get("/execution/{runId}")
-async def get_execution(wsId: str, runId: str):
-    store = get_store()
-    data = await store.get_run(runId)
-    if not data or data.get("workspaceId") != wsId:
-        raise HTTPException(status_code=404, detail="run not found")
-    return data
+
 
 
 @router.get("/execution/export")
@@ -124,3 +118,12 @@ async def export_execution_log(wsId: str):
     items = await store.list_runs(wsId)
     logger.info("execution log exported for ws %s, %d records", wsId, len(items))
     return {"workspaceId": wsId, "records": items, "count": len(items)}
+
+
+@router.get("/execution/{runId}")
+async def get_execution(wsId: str, runId: str):
+    store = get_store()
+    data = await store.get_run(runId)
+    if not data or data.get("workspaceId") != wsId:
+        raise HTTPException(status_code=404, detail="run not found")
+    return data

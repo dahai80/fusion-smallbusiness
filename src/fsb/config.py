@@ -30,16 +30,18 @@ class FSBConfig:
         "FSB_EMBEDDING_MODEL", "BGE-M3"
     )
     HTTP_TIMEOUT: int = int(os.environ.get("FSB_HTTP_TIMEOUT", "10"))
+    STANDALONE_MODE: bool = os.environ.get("FSB_STANDALONE_MODE", "true").lower() in ("true", "1", "yes")
 
 
 fsb_config = FSBConfig()
 
 logger.info(
-    "fsb config: artifacts=%s mlx=%s gateway=%s cowork=%s rag=%s model=%s",
+    "fsb config: artifacts=%s mlx=%s gateway=%s cowork=%s rag=%s model=%s standalone=%s",
     fsb_config.ARTIFACTS_ENGINE_URL,
     fsb_config.FUSION_MLX_URL,
     fsb_config.FUSION_GATEWAY_URL,
     fsb_config.FUSION_COWORK_URL,
     fsb_config.FUSION_RAG_URL,
     fsb_config.LLM_DEFAULT_MODEL,
+    fsb_config.STANDALONE_MODE,
 )

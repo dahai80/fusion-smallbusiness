@@ -484,3 +484,4 @@ class TestFSBConfig:
         assert "11436" in config.FUSION_RAG_URL
         assert config.HTTP_TIMEOUT > 0
         assert config.EMBEDDING_MODEL == "BGE-M3"
+        assert isinstance(config.STANDALONE_MODE, bool)

@@ -100,6 +100,16 @@ async def test_connector_crud(client, ws):
     )
     assert resp.status_code == 200
 
+    resp = await client.delete(
+        f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}"
+    )
+    assert resp.status_code == 200
+    assert resp.json()["success"] is True
+
+    resp = await client.get(f"/api/v1/fsb/workspace/{ws}/connector")
+    remaining_ids = [c["connId"] for c in resp.json()]
+    assert conn_id not in remaining_ids
+
 
 # --- Skill CRUD ---
 
@@ -248,7 +258,7 @@ async def test_external_webhook_register(client):
 
 
 @pytest.mark.asyncio
-async def test_send_to_canvas(client, ws):
+async def test_send_to_canvas_standalone(client, ws):
     wf_resp = await client.post(
         f"/api/v1/fsb/workspace/{ws}/workflow",
         json={"name": "canvas-wf"},
@@ -256,7 +266,28 @@ async def test_send_to_canvas(client, ws):
     assert wf_resp.status_code == 200
     wf_id = wf_resp.json()["wfId"]
 
-    with patch("fsb.engine.artifact_client.export_session", new_callable=AsyncMock) as mock_export:
+    resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/workflow/{wf_id}/send-to-canvas",
+        json={"sessionId": "s1"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+
+
+@pytest.mark.asyncio
+async def test_send_to_canvas_live(client, ws):
+    wf_resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/workflow",
+        json={"name": "canvas-wf-live"},
+    )
+    assert wf_resp.status_code == 200
+    wf_id = wf_resp.json()["wfId"]
+
+    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
+         patch("fsb.engine.artifact_client.export_session", new_callable=AsyncMock) as mock_export:
+        mock_cfg.STANDALONE_MODE = False
         mock_export.return_value = {"success": True, "data": {"count": 2, "path": "/tmp/exports/s1"}}
         resp = await client.post(
             f"/api/v1/fsb/workspace/{ws}/workflow/{wf_id}/send-to-canvas",
@@ -269,9 +300,23 @@ async def test_send_to_canvas(client, ws):
 
 
 @pytest.mark.asyncio
-async def test_sync_to_project(client, ws):
-    with patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list, \
+async def test_sync_to_project_standalone(client, ws):
+    resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/sync-to-project",
+        json={"projectId": "p1"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+
+
+@pytest.mark.asyncio
+async def test_sync_to_project_live(client, ws):
+    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
+         patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list, \
          patch("fsb.engine.artifact_client.move_artifact_to_kb", new_callable=AsyncMock) as mock_move:
+        mock_cfg.STANDALONE_MODE = False
         mock_list.return_value = {"success": True, "data": [
             {"id": "art_1", "name": "report"},
             {"id": "art_2", "name": "invoice"},

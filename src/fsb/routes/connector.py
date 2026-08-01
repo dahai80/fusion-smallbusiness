@@ -85,6 +85,25 @@ async def refresh_connector(wsId: str, connId: str):
     return {"success": True}
 
 
+@router.delete("/{connId}")
+async def delete_connector(wsId: str, connId: str):
+    store = get_store()
+    data = await store.get_connector(connId)
+    if not data or data.get("workspaceId") != wsId:
+        raise HTTPException(status_code=404, detail="connector not found")
+    conn_key = data.get("connectorKey", "")
+    await store.delete_connector(connId)
+    ws = await store.get_workspace(wsId)
+    if ws:
+        ids = ws.get("connectorIds", [])
+        if conn_key in ids:
+            ids.remove(conn_key)
+            ws["connectorIds"] = ids
+            await store.save_workspace(wsId, ws)
+    logger.info("connector deleted: %s from ws %s", connId, wsId)
+    return {"success": True}
+
+
 @meta_router.get("", response_model=list[ConnectorMeta])
 async def list_connector_meta():
     return get_builtin_connectors()
