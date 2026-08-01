@@ -70,10 +70,16 @@ src/fsb/
 tests/
 ├── conftest.py              # pytest fixtures
 ├── test_api.py              # API 集成测试
+├── test_api_extended.py     # 扩展 API 端点测试（404/502/审批/集成/外部路由）
 ├── test_engine.py           # 引擎 + DAG 验证测试
 ├── test_event.py            # 事件触发 + 订阅测试
 ├── test_webhook.py          # Webhook CRUD 测试
-└── test_integration.py      # 上游集成客户端 mock 测试
+├── test_integration.py      # 上游集成客户端 mock 测试
+├── test_clients.py          # engine 客户端单元测试（LLM/gateway/artifact/cowork/rag/webhook）
+├── test_runner.py           # WorkflowRunner 执行路径测试
+├── test_scheduler.py        # WorkflowScheduler 定时调度测试
+├── test_registry.py         # 内置 Skill/Workflow 注册表测试
+└── test_app_and_eventbus.py # App 生命周期 + EventBus 事件发布测试
 ```
 
 ## API 端点
@@ -134,8 +140,11 @@ source .venv/bin/activate
 # 启动服务
 uvicorn fsb.app:app --host 0.0.0.0 --port 8000
 
-# 运行测试
+# 运行测试（291 用例，覆盖率 95%）
 pytest tests/ -v
+
+# 运行测试 + 覆盖率报告
+pytest tests/ --cov=fsb --cov-report=term-missing -v
 ```
 
 ## 内置 Skill（15 个）
