@@ -1,93 +1,97 @@
 # Fusion Small Business
 
-面向小微企业主/小团队的跨 SaaS 智能业务工作台。
+[中文文档](README_CN.md)
 
-## 产品定位
+Cross-SaaS intelligent business workspace for small business owners and teams.
 
-Fusion Small Business（FSB）是 Fusion Team/Enterprise 订阅内一键启用的业务能力模块，提供：
-- 可视化拖拽 Workflow Canvas 搭建业务工作流
-- 第三方 SaaS 连接器 + 本地文件双数据源
-- 人工审批闸确保安全
-- 工作流产出自动归档 Fusion Project 知识库
+## Product Positioning
 
-## 架构概览
+Fusion Small Business (FSB) is a one-click business module within the Fusion Team/Enterprise subscription, providing:
+
+- Visual drag-and-drop Workflow Canvas for building business workflows
+- Third-party SaaS connectors + local file dual data sources
+- Human approval gates for safety
+- Automatic workflow output archiving to Fusion Project knowledge base
+
+## Architecture
 
 ```
-Connectors（数据接入）→ Skills（原子能力）→ Workflows（业务流水线）
+Connectors (Data Ingestion) → Skills (Atomic Capabilities) → Workflows (Business Pipelines)
 ```
 
-三层架构 + LangGraph 风格 DAG 工作流引擎，7 种节点类型：
-- `START_NODE` / `END_NODE` — 流程边界
-- `CONNECTOR_NODE` — SaaS 连接器调用
-- `SKILL_NODE` — LLM/函数技能
-- `CONDITION_NODE` — 条件分支
-- `APPROVAL_GATE_NODE` — 人工审批闸（写操作必经）
-- `OUTPUT_NODE` — 产出输出
+Three-layer architecture with LangGraph-style DAG workflow engine, 7 node types:
 
-## 项目结构
+- `START_NODE` / `END_NODE` — Flow boundaries
+- `CONNECTOR_NODE` — SaaS connector invocation
+- `SKILL_NODE` — LLM/function skills
+- `CONDITION_NODE` — Conditional branching
+- `APPROVAL_GATE_NODE` — Human approval gate (required for write operations)
+- `OUTPUT_NODE` — Output generation
+
+## Project Structure
 
 ```
 src/fsb/
-├── __init__.py              # 包入口
-├── app.py                   # FastAPI 应用 + 生命周期
+├── __init__.py              # Package entry
+├── app.py                   # FastAPI app + lifecycle
 ├── models/
-│   ├── common.py            # 枚举、工具函数、共享模型
-│   ├── workspace.py         # Workspace 模型
-│   ├── connector.py         # Connector 模型
-│   ├── skill.py             # Skill 模型
-│   ├── workflow.py          # Workflow + GraphDefinition 模型
-│   ├── execution.py         # RunInstance + PendingTask 模型
-│   ├── event.py             # EventTrigger + EventSubscription 模型
-│   └── webhook.py           # Webhook 模型
+│   ├── common.py            # Enums, utils, shared models
+│   ├── workspace.py         # Workspace model
+│   ├── connector.py         # Connector model
+│   ├── skill.py             # Skill model
+│   ├── workflow.py          # Workflow + GraphDefinition models
+│   ├── execution.py         # RunInstance + PendingTask models
+│   ├── event.py             # EventTrigger + EventSubscription models
+│   └── webhook.py           # Webhook model
 ├── db/
-│   └── store.py             # SQLite 异步存储层（10 表）
-├── config.py                # 集中式上游服务 URL 配置
+│   └── store.py             # SQLite async store (10 tables)
+├── config.py                # Centralized upstream service URL config
 ├── engine/
-│   ├── runner.py            # 工作流 DAG 执行引擎（含审批闸 + webhook 回调 + 上游集成）
-│   ├── router.py            # 意图路由（slash 命令 + 自然语言模糊匹配）
-│   ├── scheduler.py         # APScheduler cron 定时调度
-│   ├── event_bus.py         # 事件驱动触发引擎
-│   ├── webhook_dispatcher.py # Webhook HTTP 回调分发
-│   ├── artifact_client.py   # fusion-artifacts-engine HTTP/JSON-RPC 客户端（创建/导出/移动KB/列表）
-│   ├── llm_client.py        # fusion-mlx LLM API 客户端
-│   ├── gateway_client.py    # fusion-gateway 连接器 HTTP 客户端（含 Connection CRUD + OAuth2 流程）
-│   ├── cowork_client.py     # fusion-cowork JSON-RPC 2.0 客户端（含项目知识库同步/快照/导出）
-│   └── rag_client.py        # fusion-rag 知识库/检索/问答 HTTP 客户端
+│   ├── runner.py            # Workflow DAG execution engine (approval gates + webhook callbacks + upstream integration)
+│   ├── router.py            # Intent routing (slash commands + fuzzy natural language matching)
+│   ├── scheduler.py         # APScheduler cron scheduling
+│   ├── event_bus.py         # Event-driven trigger engine
+│   ├── webhook_dispatcher.py # Webhook HTTP callback dispatcher
+│   ├── artifact_client.py   # fusion-artifacts-engine HTTP/JSON-RPC client (create/export/move-KB/list)
+│   ├── llm_client.py        # fusion-mlx LLM API client
+│   ├── gateway_client.py    # fusion-gateway connector HTTP client (Connection CRUD + OAuth2 flow)
+│   ├── cowork_client.py     # fusion-cowork JSON-RPC 2.0 client (project KB sync/snapshot/export)
+│   └── rag_client.py        # fusion-rag KB/retrieval/QA HTTP client
 ├── routes/
-│   ├── workspace.py         # Workspace CRUD + 导入导出
-│   ├── connector.py         # Connector 连接/断开/刷新 + 元数据
-│   ├── skill.py             # Skill CRUD + 测试
-│   ├── workflow.py          # Workflow CRUD + 运行 + 调度
-│   ├── execution.py         # 执行历史 + 审批操作
-│   ├── integration.py       # 集成路由（canvas/project/artifact）
-│   ├── external.py          # 外部触发 + 事件 + Webhook
-│   └── variable.py          # 变量 + 模板
+│   ├── workspace.py         # Workspace CRUD + import/export
+│   ├── connector.py         # Connector connect/disconnect/refresh + metadata
+│   ├── skill.py             # Skill CRUD + test
+│   ├── workflow.py          # Workflow CRUD + run + schedule
+│   ├── execution.py         # Execution history + approval actions
+│   ├── integration.py       # Integration routes (canvas/project/artifact)
+│   ├── external.py          # External triggers + events + webhooks
+│   └── variable.py          # Variables + templates
 ├── skills/
-│   └── registry.py          # 15 个内置 Skill 定义
+│   └── registry.py          # 15 built-in skill definitions
 └── workflows/
-    └── registry.py          # 15 个内置 Workflow 定义
+    └── registry.py          # 15 built-in workflow definitions
 
 tests/
 ├── conftest.py              # pytest fixtures
-├── test_api.py              # API 集成测试
-├── test_api_extended.py     # 扩展 API 端点测试（404/502/审批/集成/外部路由）
-├── test_engine.py           # 引擎 + DAG 验证测试
-├── test_event.py            # 事件触发 + 订阅测试
-├── test_webhook.py          # Webhook CRUD 测试
-├── test_integration.py      # 上游集成客户端 mock 测试
-├── test_clients.py          # engine 客户端单元测试（LLM/gateway/artifact/cowork/rag/webhook）
-├── test_runner.py           # WorkflowRunner 执行路径测试
-├── test_scheduler.py        # WorkflowScheduler 定时调度测试
-├── test_registry.py         # 内置 Skill/Workflow 注册表测试
-└── test_app_and_eventbus.py # App 生命周期 + EventBus 事件发布测试
+├── test_api.py              # API integration tests
+├── test_api_extended.py     # Extended API endpoint tests (404/502/approval/integration/external)
+├── test_engine.py           # Engine + DAG validation tests
+├── test_event.py            # Event trigger + subscription tests
+├── test_webhook.py          # Webhook CRUD tests
+├── test_integration.py      # Upstream integration client mock tests
+├── test_clients.py          # Engine client unit tests (LLM/gateway/artifact/cowork/rag/webhook)
+├── test_runner.py           # WorkflowRunner execution path tests
+├── test_scheduler.py        # WorkflowScheduler scheduling tests
+├── test_registry.py         # Built-in Skill/Workflow registry tests
+└── test_app_and_eventbus.py # App lifecycle + EventBus tests
 ```
 
-## API 端点
+## API Endpoints
 
-所有端点前缀：`/api/v1/fsb`
+All endpoints prefixed with `/api/v1/fsb`
 
-| 模块 | 端点 | 方法 |
-|------|------|------|
+| Module | Endpoint | Method |
+|--------|----------|--------|
 | Health | `/health` | GET |
 | Workspace | `/workspace` | POST/GET |
 | Workspace | `/workspace/{wsId}` | GET/PUT/DELETE |
@@ -131,129 +135,131 @@ tests/
 | Variable | `/workspace/{wsId}/variable` | GET/PUT |
 | Template | `/workspace/{wsId}/template` | GET/POST |
 
-## 快速启动
+## Quick Start
 
 ```bash
-cd /Users/dahai/fusion/fusion-smallbusiness
+cd /path/to/fusion-smallbusiness
 source .venv/bin/activate
 
-# 启动服务
+# Start the server
 uvicorn fsb.app:app --host 0.0.0.0 --port 8000
 
-# 运行测试（291 用例，覆盖率 95%）
+# Run tests (291 tests, 95% coverage)
 pytest tests/ -v
 
-# 运行测试 + 覆盖率报告
+# Run tests with coverage report
 pytest tests/ --cov=fsb --cov-report=term-missing -v
 ```
 
-## 内置 Skill（15 个）
+## Built-in Skills (15)
 
-| Skill | 说明 |
-|-------|------|
-| cash-flow-snapshot | 现金流快照 |
-| draft-invoice-reminder | 催收邮件生成 |
-| score-lead | 线索评分 |
-| weekly-sales-report | 周销售报告 |
-| expense-categorize | 支出分类 |
-| customer-sentiment | 客户情绪分析 |
-| contract-summary | 合同要点提取 |
-| tax-reminder | 税务提醒 |
-| email-draft | 邮件起草 |
-| inventory-alert | 库存预警 |
-| payroll-summary | 薪资摘要 |
-| competitor-brief | 竞品简报 |
-| slack-digest | Slack 摘要 |
-| invoice-validate | 发票校验 |
-| kpi-dashboard-data | KPI 仪表盘数据 |
+| Skill | Description |
+|-------|-------------|
+| cash-flow-snapshot | Cash flow snapshot |
+| draft-invoice-reminder | Invoice reminder email generation |
+| score-lead | Lead scoring |
+| weekly-sales-report | Weekly sales report |
+| expense-categorize | Expense categorization |
+| customer-sentiment | Customer sentiment analysis |
+| contract-summary | Contract key points extraction |
+| tax-reminder | Tax deadline reminder |
+| email-draft | Email drafting |
+| inventory-alert | Inventory alert |
+| payroll-summary | Payroll summary |
+| competitor-brief | Competitor brief |
+| slack-digest | Slack digest |
+| invoice-validate | Invoice validation |
+| kpi-dashboard-data | KPI dashboard data |
 
-## 内置 Workflow（15 个）
+## Built-in Workflows (15)
 
-| Workflow | Slash 命令 | 说明 |
-|----------|-----------|------|
-| invoice-chase | `/invoice-chase` | 逾期发票催收 |
-| lead-nurture | `/lead-nurture` | 线索培育跟进 |
-| cash-flow-alert | `/cash-flow-alert` | 现金流预警（周 cron） |
-| weekly-sales | `/weekly-sales` | 周销售报告 |
-| expense-review | `/expense-review` | 支出审查 |
-| customer-health | `/customer-health` | 客户健康度检查 |
-| contract-review | `/contract-review` | 合同审查 |
-| tax-filing-reminder | `/tax-reminder` | 税务申报提醒（月 cron） |
-| inventory-check | `/inventory-check` | 库存盘点预警（工作日 cron） |
-| payroll-process | `/payroll` | 薪资处理（月 cron） |
-| slack-daily-digest | `/slack-digest` | Slack 每日摘要（工作日 cron） |
-| invoice-validation | `/invoice-validate` | 发票合规校验 |
-| kpi-dashboard | `/kpi` | KPI 仪表盘更新（工作日 cron） |
-| competitor-watch | `/competitor-watch` | 竞品监控（周 cron） |
-| multi-channel-outreach | `/outreach` | 多渠道触达 |
+| Workflow | Slash Command | Description |
+|----------|---------------|-------------|
+| invoice-chase | `/invoice-chase` | Overdue invoice chasing |
+| lead-nurture | `/lead-nurture` | Lead nurturing follow-up |
+| cash-flow-alert | `/cash-flow-alert` | Cash flow alert (weekly cron) |
+| weekly-sales | `/weekly-sales` | Weekly sales report |
+| expense-review | `/expense-review` | Expense review |
+| customer-health | `/customer-health` | Customer health check |
+| contract-review | `/contract-review` | Contract review |
+| tax-filing-reminder | `/tax-reminder` | Tax filing reminder (monthly cron) |
+| inventory-check | `/inventory-check` | Inventory check alert (weekday cron) |
+| payroll-process | `/payroll` | Payroll processing (monthly cron) |
+| slack-daily-digest | `/slack-digest` | Slack daily digest (weekday cron) |
+| invoice-validation | `/invoice-validate` | Invoice compliance validation |
+| kpi-dashboard | `/kpi` | KPI dashboard update (weekday cron) |
+| competitor-watch | `/competitor-watch` | Competitor monitoring (weekly cron) |
+| multi-channel-outreach | `/outreach` | Multi-channel outreach |
 
-## 上游依赖 Issue 清单
+## Upstream Dependency Issues
 
-FSB 依赖以下上游模块提供基础能力，已提交 issue 跟踪：
+FSB depends on the following upstream modules, tracked via issues:
 
-| 上游模块 | Issue | 诉求 | 状态 |
-|----------|-------|------|------|
-| fusion-gateway | [#2](https://github.com/dahai80/fusion-gateway/issues/2) | Connector 插件框架、OAuth2 代持、Action 统一调用接口、审计日志 | ✅ 已集成 |
-| fusion-gateway | [#6](https://github.com/dahai80/fusion-gateway/issues/6) | OAuth2 授权委托流 + 凭据持久化 + 真实 SaaS API 调用 | ✅ 已集成 |
-| fusion-gateway | [#7](https://github.com/dahai80/fusion-gateway/issues/7) | OAuth2 Provider + Token Refresh + AES 加密 | ✅ 已集成 |
-| fusion-gateway | [#8](https://github.com/dahai80/fusion-gateway/issues/8) | HTTPS 终止 + AES 静态加密 | ✅ 已集成 |
-| fusion-cowork | [#7](https://github.com/dahai80/fusion-cowork/issues/7) | desk.project.syncKnowledge — 接收项目知识库同步 | ✅ 已集成 |
-| fusion-cowork | [#8](https://github.com/dahai80/fusion-cowork/issues/8) | desk.project.importSnapshot — 接收会话快照导入 | ✅ 已集成 |
-| fusion-cowork | [#9](https://github.com/dahai80/fusion-cowork/issues/9) | desk.project.exportToProject — 导出空间内容到项目 | ✅ 已集成 |
-| fusion-agent-studio | [#35](https://github.com/dahai80/fusion-agent-studio/issues/35) | LangGraph 工作流执行引擎、审批闸断点、上下文沙箱、Skill 注册/执行 | ✅ 已集成 |
-| fusion-cowork | [#4](https://github.com/dahai80/fusion-cowork/issues/4) | 侧边栏入口、工作台会话隔离、权限模型复用、审批通知推送 | ✅ 已集成 |
-| fusion-studio | [#28](https://github.com/dahai80/fusion-studio/issues/28) | 前端路由/页面注册、Canvas 组件复用、Workflow Canvas 集成 | ✅ 已集成（Plugin） |
-| fusion-artifacts-engine | [#18](https://github.com/dahai80/fusion-artifacts-engine/issues/18) | 工作流产出 → Artifact 创建 API、Artifact 反向输入工作流 | ✅ 已集成 |
-| fusion-rag | [#27](https://github.com/dahai80/fusion-rag/issues/27) | 产出物自动归档 Project 知识库、RAG 检索供工作流上下文加载 | ✅ 已集成 |
-| fusion-mlx | [#302](https://github.com/dahai80/fusion-mlx/issues/302) | 非 Admin 模型管理 API、模型能力标签、Embedding 模型独立配置 | ✅ 已集成 |
+| Upstream Module | Issue | Request | Status |
+|-----------------|-------|---------|--------|
+| fusion-gateway | [#2](https://github.com/dahai80/fusion-gateway/issues/2) | Connector plugin framework, OAuth2 delegation, unified Action API, audit log | ✅ Integrated |
+| fusion-gateway | [#6](https://github.com/dahai80/fusion-gateway/issues/6) | OAuth2 authorization flow + credential persistence + real SaaS API calls | ✅ Integrated |
+| fusion-gateway | [#7](https://github.com/dahai80/fusion-gateway/issues/7) | OAuth2 Provider + Token Refresh + AES encryption | ✅ Integrated |
+| fusion-gateway | [#8](https://github.com/dahai80/fusion-gateway/issues/8) | HTTPS termination + AES encryption at rest | ✅ Integrated |
+| fusion-cowork | [#7](https://github.com/dahai80/fusion-cowork/issues/7) | desk.project.syncKnowledge — project KB sync | ✅ Integrated |
+| fusion-cowork | [#8](https://github.com/dahai80/fusion-cowork/issues/8) | desk.project.importSnapshot — session snapshot import | ✅ Integrated |
+| fusion-cowork | [#9](https://github.com/dahai80/fusion-cowork/issues/9) | desk.project.exportToProject — export workspace content to project | ✅ Integrated |
+| fusion-agent-studio | [#35](https://github.com/dahai80/fusion-agent-studio/issues/35) | LangGraph workflow engine, approval gate breakpoints, context sandbox, Skill registration/execution | ✅ Integrated |
+| fusion-cowork | [#4](https://github.com/dahai80/fusion-cowork/issues/4) | Sidebar entry, workspace session isolation, permission model reuse, approval notification push | ✅ Integrated |
+| fusion-studio | [#28](https://github.com/dahai80/fusion-studio/issues/28) | Frontend route/page registration, Canvas component reuse, Workflow Canvas integration | ✅ Integrated (Plugin) |
+| fusion-artifacts-engine | [#18](https://github.com/dahai80/fusion-artifacts-engine/issues/18) | Workflow output → Artifact creation API, Artifact reverse-input to workflow | ✅ Integrated |
+| fusion-rag | [#27](https://github.com/dahai80/fusion-rag/issues/27) | Output auto-archiving to Project KB, RAG retrieval for workflow context loading | ✅ Integrated |
+| fusion-mlx | [#302](https://github.com/dahai80/fusion-mlx/issues/302) | Non-admin model management API, model capability tags, standalone embedding model config | ✅ Integrated |
 
-## 上游集成配置
+## Upstream Integration Config
 
-FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环境变量配置：
+FSB communicates with upstream services via HTTP/JSON-RPC clients. All URLs are configured through environment variables:
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:8892` | fusion-artifacts-engine 服务地址 |
-| `FSB_FUSION_MLX_URL` | `http://localhost:11434` | fusion-mlx LLM API 地址 |
-| `FSB_FUSION_GATEWAY_URL` | `http://localhost:8080` | fusion-gateway 服务地址 |
-| `FSB_FUSION_COWORK_URL` | `http://localhost:9760` | fusion-cowork RPC 地址 |
-| `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag 知识库服务地址 |
-| `FSB_FUSION_RAG_API_KEY` | _(空)_ | fusion-rag API Key（可选） |
-| `FSB_LLM_DEFAULT_MODEL` | `default` | 默认 LLM 模型名 |
-| `FSB_EMBEDDING_MODEL` | `BGE-M3` | 默认 Embedding 模型名 |
-| `FSB_HTTP_TIMEOUT` | `10` | HTTP 请求超时（秒） |
-| `FSB_STANDALONE_MODE` | `true` | 独立模式：true 时集成路由返回 stub 响应，避免上游不可用时报错 |
+| Env Variable | Default | Description |
+|--------------|---------|-------------|
+| `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:8892` | fusion-artifacts-engine service URL |
+| `FSB_FUSION_MLX_URL` | `http://localhost:11434` | fusion-mlx LLM API URL |
+| `FSB_FUSION_GATEWAY_URL` | `http://localhost:8080` | fusion-gateway service URL |
+| `FSB_FUSION_COWORK_URL` | `http://localhost:9760` | fusion-cowork RPC URL |
+| `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag KB service URL |
+| `FSB_FUSION_RAG_API_KEY` | _(empty)_ | fusion-rag API Key (optional) |
+| `FSB_LLM_DEFAULT_MODEL` | `default` | Default LLM model name |
+| `FSB_EMBEDDING_MODEL` | `BGE-M3` | Default embedding model name |
+| `FSB_HTTP_TIMEOUT` | `10` | HTTP request timeout (seconds) |
+| `FSB_STANDALONE_MODE` | `true` | Standalone mode: when true, integration routes return stub responses to avoid errors when upstream is unavailable |
 
-集成点说明：
-- **OUTPUT_NODE** → `artifact_client` + `rag_client`：工作流产出自动创建 Artifact 并归档到知识库
-- **SKILL_NODE** → `llm_client`：Skill 节点调用 LLM 执行，支持模型列表查询和 Embedding
-- **CONNECTOR_NODE** → `gateway_client`：SaaS 连接器 Action 调用，支持 Connection 全生命周期管理 + OAuth2 授权流
-- **APPROVAL_GATE_NODE** → `cowork_client`：审批闸通知推送到工作台 + 项目知识库同步/快照导入/空间导出
+Integration points:
 
-所有客户端在连接失败时优雅降级，不会阻塞工作流执行。
+- **OUTPUT_NODE** → `artifact_client` + `rag_client`: Workflow output auto-creates Artifacts and archives to knowledge base
+- **SKILL_NODE** → `llm_client`: Skill node calls LLM, supports model listing and embedding
+- **CONNECTOR_NODE** → `gateway_client`: SaaS connector Action calls, full Connection lifecycle + OAuth2 authorization flow
+- **APPROVAL_GATE_NODE** → `cowork_client`: Approval gate notifications pushed to workspace + project KB sync/snapshot import/workspace export
 
-## fusion-studio 插件
+All clients gracefully degrade on connection failure and never block workflow execution.
 
-FSB 通过 fusion-studio 的 Plugin 机制提供前端集成，插件位于：
+## fusion-studio Plugin
+
+FSB provides frontend integration via the fusion-studio Plugin mechanism:
 
 ```
 ~/.fusion-studio/plugins/fsb.fusion/
-├── manifest.json    # 插件元信息
-└── main.py          # 入口（on_load/on_render_panel）
+├── manifest.json    # Plugin metadata
+└── main.py          # Entry (on_load/on_render_panel)
 ```
 
-插件提供三个面板：
-- **Dashboard** — 工作区概览、健康状态、快捷操作
-- **Run Workflow** — 工作流列表和一键触发
-- **Pending Approvals** — 待审批任务列表和 Approve/Deny 操作
+The plugin provides three panels:
 
-## 设计文档
+- **Dashboard** — Workspace overview, health status, quick actions
+- **Run Workflow** — Workflow list and one-click trigger
+- **Pending Approvals** — Pending task list with Approve/Deny actions
 
-- [PRD 与方案文档](../architecture/fusion-smallbusiness-prd-plan.md)
+## Design Docs
 
-## 环境设置
+- [PRD & Plan Document](../architecture/fusion-smallbusiness-prd-plan.md)
+
+## Environment Setup
 
 ```bash
-cd /Users/dahai/fusion/fusion-smallbusiness
+cd /path/to/fusion-smallbusiness
 source .venv/bin/activate
 ```
