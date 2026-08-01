@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .common import NodeType, ScheduleType, gen_id, utc_now
 
@@ -36,7 +36,16 @@ class WorkflowEdge(BaseModel):
 class GraphDefinition(BaseModel):
     nodes: list[WorkflowNode] = Field(default_factory=list)
     edges: list[WorkflowEdge] = Field(default_factory=list)
-    entryNode: str = "n_start"
+    entryNode: str = ""
+
+    @model_validator(mode="after")
+    def _resolve_entry_node(self) -> "GraphDefinition":
+        if not self.entryNode:
+            for n in self.nodes:
+                if n.type == NodeType.START_NODE:
+                    self.entryNode = n.id
+                    break
+        return self
 
 
 class ScheduleConfig(BaseModel):
