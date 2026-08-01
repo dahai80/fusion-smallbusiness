@@ -64,9 +64,23 @@ async def create_template(wsId: str, body: dict):
         "templateId": tpl_id,
         "workspaceId": wsId,
         "name": body.get("name", "unnamed"),
+        "category": body.get("category", ""),
+        "description": body.get("description", ""),
         "data": body.get("data", {}),
+        "graphDefinition": body.get("graphDefinition"),
         "createTime": utc_now().isoformat(),
     }
     await store.save_template(tpl_id, wsId, tpl)
     logger.info("template created: %s in ws %s", tpl_id, wsId)
     return tpl
+
+
+@router.delete("/template/{templateId}")
+async def delete_template(wsId: str, templateId: str):
+    store = get_store()
+    data = await store.get_template(templateId)
+    if not data or data.get("workspaceId") != wsId:
+        raise HTTPException(status_code=404, detail="template not found")
+    await store.delete_template(templateId)
+    logger.info("template deleted: %s from ws %s", templateId, wsId)
+    return {"success": True}

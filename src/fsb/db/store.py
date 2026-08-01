@@ -275,6 +275,9 @@ class Store:
         await self._delete("pending_tasks", task_id, "taskId")
 
     # template
+    async def get_template(self, tpl_id: str) -> Optional[dict]:
+        return await self._get_one("templates", tpl_id, "templateId")
+
     async def list_templates(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
         return await self._get_many("templates", ws_id, offset=offset, limit=limit)
 

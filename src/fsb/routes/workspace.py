@@ -98,25 +98,38 @@ async def export_workspace(wsId: str):
 @router.post("/import", response_model=Workspace)
 async def import_workspace(body: dict):
     store = get_store()
-    ws_data = body.get("workspace", {})
-    ws = Workspace(**ws_data)
+    ws_data = body.get("workspace")
+    if ws_data and isinstance(ws_data, dict):
+        ws = Workspace(**ws_data)
+        await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
+        for c in body.get("connectors", []):
+            from ..models.connector import Connector
+            conn = Connector(**c)
+            conn.workspaceId = ws.wsId
+            await store.save_connector(conn.connId, ws.wsId, conn.model_dump(mode="json"))
+        for s in body.get("skills", []):
+            from ..models.skill import Skill
+            sk = Skill(**s)
+            sk.workspaceId = ws.wsId
+            await store.save_skill(sk.skillId, ws.wsId, sk.model_dump(mode="json"))
+        for w in body.get("workflows", []):
+            from ..models.workflow import Workflow
+            wf = Workflow(**w)
+            wf.workspaceId = ws.wsId
+            await store.save_workflow(wf.wfId, ws.wsId, wf.model_dump(mode="json"))
+        logger.info("workspace imported (full): %s", ws.wsId)
+        return ws
+    name = body.get("name") or body.get("title") or ""
+    if not name:
+        raise HTTPException(status_code=422, detail="body must have 'workspace' dict or 'name'/'title' field")
+    ws = Workspace(
+        title=name,
+        description=body.get("description", ""),
+        projectId=body.get("projectId"),
+        bindAgentId=body.get("bindAgentId"),
+    )
     await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
-    for c in body.get("connectors", []):
-        from ..models.connector import Connector
-        conn = Connector(**c)
-        conn.workspaceId = ws.wsId
-        await store.save_connector(conn.connId, ws.wsId, conn.model_dump(mode="json"))
-    for s in body.get("skills", []):
-        from ..models.skill import Skill
-        sk = Skill(**s)
-        sk.workspaceId = ws.wsId
-        await store.save_skill(sk.skillId, ws.wsId, sk.model_dump(mode="json"))
-    for w in body.get("workflows", []):
-        from ..models.workflow import Workflow
-        wf = Workflow(**w)
-        wf.workspaceId = ws.wsId
-        await store.save_workflow(wf.wfId, ws.wsId, wf.model_dump(mode="json"))
-    logger.info("workspace imported: %s", ws.wsId)
+    logger.info("workspace imported (simple): %s", ws.wsId)
     return ws
 
 
