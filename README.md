@@ -89,7 +89,7 @@ tests/
 | Workspace | `/workspace/{wsId}/export` | POST |
 | Workspace | `/workspace/import` | POST |
 | Connector | `/workspace/{wsId}/connector` | POST/GET |
-| Connector | `/workspace/{wsId}/connector/{connId}` | PUT |
+| Connector | `/workspace/{wsId}/connector/{connId}` | PUT/DELETE |
 | Connector | `/workspace/{wsId}/connector/{connId}/refresh` | POST |
 | Connector | `/workspace/{wsId}/connector/{connId}/disconnect` | POST |
 | Connector Meta | `/connector-meta` | GET |
@@ -203,6 +203,7 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 | `FSB_LLM_DEFAULT_MODEL` | `default` | 默认 LLM 模型名 |
 | `FSB_EMBEDDING_MODEL` | `BGE-M3` | 默认 Embedding 模型名 |
 | `FSB_HTTP_TIMEOUT` | `10` | HTTP 请求超时（秒） |
+| `FSB_STANDALONE_MODE` | `true` | 独立模式：true 时集成路由返回 stub 响应，避免上游不可用时报错 |
 
 集成点说明：
 - **OUTPUT_NODE** → `artifact_client` + `rag_client`：工作流产出自动创建 Artifact 并归档到知识库
