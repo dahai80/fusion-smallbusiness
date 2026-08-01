@@ -14,6 +14,7 @@ class NodeConfig(BaseModel):
     action: Optional[str] = None
     permission: Optional[str] = None
     skillId: Optional[str] = None
+    label: Optional[str] = None
     title: Optional[str] = None
     conditionExpr: Optional[str] = None
     outputKey: Optional[str] = None

@@ -81,6 +81,7 @@ class ConnectorPermission(str, Enum):
 class Variable(BaseModel):
     key: str
     value: Any
+    description: Optional[str] = None
 
 
 class ApiCallConfig(BaseModel):
