@@ -2,7 +2,9 @@ import logging
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
+from ..config import fsb_config
 from ..connectors.registry import get_builtin_connectors
 from ..db.store import Store
 from ..models.common import AuthStatus, ConnectorMeta, utc_now
@@ -115,3 +117,62 @@ async def get_connector_meta(connectorKey: str):
         if m.connectorKey == connectorKey:
             return m
     raise HTTPException(status_code=404, detail="connector meta not found")
+
+
+class OAuth2AuthorizeRequest(BaseModel):
+    connectorKey: str
+    redirectUri: str
+    state: str = ""
+    scope: str = ""
+
+
+@router.post("/{connId}/oauth2/authorize")
+async def oauth2_authorize(wsId: str, connId: str, body: OAuth2AuthorizeRequest):
+    store = get_store()
+    data = await store.get_connector(connId)
+    if not data or data.get("workspaceId") != wsId:
+        raise HTTPException(status_code=404, detail="connector not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("oauth2 authorize (standalone): conn=%s connector=%s", connId, body.connectorKey)
+        return {
+            "success": True,
+            "authorizeUrl": "",
+            "state": body.state,
+            "standalone": True,
+        }
+
+    from ..engine.gateway_client import initiate_oauth2
+    result = await initiate_oauth2(
+        connector_key=body.connectorKey,
+        redirect_uri=body.redirectUri,
+        state=body.state,
+        scope=body.scope,
+    )
+    if not result.get("success"):
+        raise HTTPException(status_code=502, detail=result.get("message", "oauth2 authorize failed"))
+    return result
+
+
+@router.get("/{connId}/oauth2/callback")
+async def oauth2_callback(wsId: str, connId: str, code: str, state: str = ""):
+    store = get_store()
+    data = await store.get_connector(connId)
+    if not data or data.get("workspaceId") != wsId:
+        raise HTTPException(status_code=404, detail="connector not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("oauth2 callback (standalone): conn=%s code=%s", connId, code[:8])
+        return {"success": True, "connectionId": connId, "standalone": True}
+
+    from ..engine.gateway_client import handle_oauth2_callback
+    result = await handle_oauth2_callback(code=code, state=state)
+    if not result.get("success"):
+        raise HTTPException(status_code=502, detail=result.get("message", "oauth2 callback failed"))
+
+    conn = Connector(**data)
+    conn.authStatus = AuthStatus.CONNECTED
+    conn.connectedAt = utc_now()
+    await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
+    logger.info("oauth2 callback: conn=%s connected", connId)
+    return result

@@ -175,3 +175,56 @@ async def refresh_connection(connection_id: str) -> dict[str, Any]:
     except Exception as e:
         logger.error("gateway refresh connection unexpected error: %s", e)
         return {"success": False, "code": -1, "message": str(e)}
+
+
+async def initiate_oauth2(
+    connector_key: str,
+    redirect_uri: str,
+    state: str = "",
+    scope: str = "",
+) -> dict[str, Any]:
+    url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/oauth2/authorize"
+    params: dict[str, str] = {
+        "connectorKey": connector_key,
+        "redirectUri": redirect_uri,
+    }
+    if state:
+        params["state"] = state
+    if scope:
+        params["scope"] = scope
+    try:
+        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            result = resp.json()
+            logger.info("oauth2 authorize initiated: connector=%s", connector_key)
+            return result
+    except httpx.HTTPError as e:
+        logger.error("oauth2 authorize failed: connector=%s error=%s", connector_key, e)
+        return {"success": False, "code": -1, "message": str(e)}
+    except Exception as e:
+        logger.error("oauth2 authorize unexpected error: connector=%s %s", connector_key, e)
+        return {"success": False, "code": -1, "message": str(e)}
+
+
+async def handle_oauth2_callback(
+    code: str,
+    state: str = "",
+) -> dict[str, Any]:
+    url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/oauth2/callback"
+    params: dict[str, str] = {"code": code}
+    if state:
+        params["state"] = state
+    try:
+        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            result = resp.json()
+            logger.info("oauth2 callback handled: state=%s", state)
+            return result
+    except httpx.HTTPError as e:
+        logger.error("oauth2 callback failed: code=%s error=%s", code[:8], e)
+        return {"success": False, "code": -1, "message": str(e)}
+    except Exception as e:
+        logger.error("oauth2 callback unexpected error: %s", e)
+        return {"success": False, "code": -1, "message": str(e)}

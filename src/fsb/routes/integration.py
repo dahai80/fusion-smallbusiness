@@ -156,3 +156,92 @@ async def create_artifact(wsId: str, body: CreateArtifactRequest):
     if result.get("status") == "error":
         raise HTTPException(status_code=502, detail=result.get("message", "artifact creation failed"))
     return {"success": True, "artifact": result}
+
+
+class SyncKnowledgeRequest(BaseModel):
+    spaceId: str
+    files: list[dict]
+
+
+@router.post("/sync-knowledge")
+async def sync_knowledge(wsId: str, body: SyncKnowledgeRequest):
+    store = get_store()
+    ws = await store.get_workspace(wsId)
+    if not ws:
+        raise HTTPException(status_code=404, detail="workspace not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("sync-knowledge (standalone): ws=%s space=%s files=%d", wsId, body.spaceId, len(body.files))
+        return {
+            "success": True,
+            "syncedCount": 0,
+            "spaceId": body.spaceId,
+            "standalone": True,
+        }
+
+    from ..engine.cowork_client import sync_knowledge as cowork_sync_knowledge
+    result = await cowork_sync_knowledge(space_id=body.spaceId, files=body.files)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=502, detail=result.get("message", "sync knowledge failed"))
+    return {"success": True, "data": result.get("data", {})}
+
+
+class ImportSnapshotRequest(BaseModel):
+    spaceId: str
+    snapshot: dict
+
+
+@router.post("/import-snapshot")
+async def import_snapshot(wsId: str, body: ImportSnapshotRequest):
+    store = get_store()
+    ws = await store.get_workspace(wsId)
+    if not ws:
+        raise HTTPException(status_code=404, detail="workspace not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("import-snapshot (standalone): ws=%s space=%s", wsId, body.spaceId)
+        return {
+            "success": True,
+            "spaceId": body.spaceId,
+            "standalone": True,
+        }
+
+    from ..engine.cowork_client import import_snapshot as cowork_import_snapshot
+    result = await cowork_import_snapshot(space_id=body.spaceId, snapshot=body.snapshot)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=502, detail=result.get("message", "import snapshot failed"))
+    return {"success": True, "data": result.get("data", {})}
+
+
+class ExportToProjectRequest(BaseModel):
+    spaceId: str
+    items: dict
+    targetProjectId: str
+
+
+@router.post("/export-to-project")
+async def export_to_project(wsId: str, body: ExportToProjectRequest):
+    store = get_store()
+    ws = await store.get_workspace(wsId)
+    if not ws:
+        raise HTTPException(status_code=404, detail="workspace not found")
+
+    if fsb_config.STANDALONE_MODE:
+        logger.info("export-to-project (standalone): ws=%s space=%s project=%s",
+                     wsId, body.spaceId, body.targetProjectId)
+        return {
+            "success": True,
+            "spaceId": body.spaceId,
+            "targetProjectId": body.targetProjectId,
+            "standalone": True,
+        }
+
+    from ..engine.cowork_client import export_to_project as cowork_export_to_project
+    result = await cowork_export_to_project(
+        space_id=body.spaceId,
+        items=body.items,
+        target_project_id=body.targetProjectId,
+    )
+    if result.get("status") == "error":
+        raise HTTPException(status_code=502, detail=result.get("message", "export to project failed"))
+    return {"success": True, "data": result.get("data", {})}

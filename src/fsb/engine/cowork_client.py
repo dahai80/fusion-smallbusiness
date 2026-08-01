@@ -82,3 +82,44 @@ async def push_notification(
     if result.get("status") == "success":
         logger.info("cowork notification pushed: space=%s user=%s type=%s", space_id, user_id, notification_type)
     return result
+
+
+async def sync_knowledge(
+    space_id: str,
+    files: list[dict],
+) -> dict[str, Any]:
+    result = await _rpc_call("desk.project.syncKnowledge", {
+        "spaceId": space_id,
+        "files": files,
+    })
+    if result.get("status") == "success":
+        logger.info("cowork knowledge synced: space=%s files=%d", space_id, len(files))
+    return result
+
+
+async def import_snapshot(
+    space_id: str,
+    snapshot: dict,
+) -> dict[str, Any]:
+    result = await _rpc_call("desk.project.importSnapshot", {
+        "spaceId": space_id,
+        "snapshot": snapshot,
+    })
+    if result.get("status") == "success":
+        logger.info("cowork snapshot imported: space=%s title=%s", space_id, snapshot.get("title", ""))
+    return result
+
+
+async def export_to_project(
+    space_id: str,
+    items: dict,
+    target_project_id: str,
+) -> dict[str, Any]:
+    result = await _rpc_call("desk.project.exportToProject", {
+        "spaceId": space_id,
+        "items": items,
+        "targetProjectId": target_project_id,
+    })
+    if result.get("status") == "success":
+        logger.info("cowork exported to project: space=%s project=%s", space_id, target_project_id)
+    return result

@@ -50,8 +50,8 @@ src/fsb/
 │   ├── webhook_dispatcher.py # Webhook HTTP 回调分发
 │   ├── artifact_client.py   # fusion-artifacts-engine HTTP/JSON-RPC 客户端（创建/导出/移动KB/列表）
 │   ├── llm_client.py        # fusion-mlx LLM API 客户端
-│   ├── gateway_client.py    # fusion-gateway 连接器 HTTP 客户端（含 Connection CRUD）
-│   ├── cowork_client.py     # fusion-cowork JSON-RPC 2.0 客户端
+│   ├── gateway_client.py    # fusion-gateway 连接器 HTTP 客户端（含 Connection CRUD + OAuth2 流程）
+│   ├── cowork_client.py     # fusion-cowork JSON-RPC 2.0 客户端（含项目知识库同步/快照/导出）
 │   └── rag_client.py        # fusion-rag 知识库/检索/问答 HTTP 客户端
 ├── routes/
 │   ├── workspace.py         # Workspace CRUD + 导入导出
@@ -92,6 +92,11 @@ tests/
 | Connector | `/workspace/{wsId}/connector/{connId}` | PUT/DELETE |
 | Connector | `/workspace/{wsId}/connector/{connId}/refresh` | POST |
 | Connector | `/workspace/{wsId}/connector/{connId}/disconnect` | POST |
+| OAuth2 | `/workspace/{wsId}/connector/{connId}/oauth2/authorize` | POST |
+| OAuth2 | `/workspace/{wsId}/connector/{connId}/oauth2/callback` | GET |
+| Cowork | `/workspace/{wsId}/sync-knowledge` | POST |
+| Cowork | `/workspace/{wsId}/import-snapshot` | POST |
+| Cowork | `/workspace/{wsId}/export-to-project` | POST |
 | Connector Meta | `/connector-meta` | GET |
 | Connector Meta | `/connector-meta/{connectorKey}` | GET |
 | Skill | `/workspace/{wsId}/skill` | POST/GET |
@@ -180,7 +185,12 @@ FSB 依赖以下上游模块提供基础能力，已提交 issue 跟踪：
 | 上游模块 | Issue | 诉求 | 状态 |
 |----------|-------|------|------|
 | fusion-gateway | [#2](https://github.com/dahai80/fusion-gateway/issues/2) | Connector 插件框架、OAuth2 代持、Action 统一调用接口、审计日志 | ✅ 已集成 |
-| fusion-gateway | [#6](https://github.com/dahai80/fusion-gateway/issues/6) | 连接器 Action 执行接口完善 | ✅ 已集成 |
+| fusion-gateway | [#6](https://github.com/dahai80/fusion-gateway/issues/6) | OAuth2 授权委托流 + 凭据持久化 + 真实 SaaS API 调用 | ✅ 已集成 |
+| fusion-gateway | [#7](https://github.com/dahai80/fusion-gateway/issues/7) | OAuth2 Provider + Token Refresh + AES 加密 | ✅ 已集成 |
+| fusion-gateway | [#8](https://github.com/dahai80/fusion-gateway/issues/8) | HTTPS 终止 + AES 静态加密 | ✅ 已集成 |
+| fusion-cowork | [#7](https://github.com/dahai80/fusion-cowork/issues/7) | desk.project.syncKnowledge — 接收项目知识库同步 | ✅ 已集成 |
+| fusion-cowork | [#8](https://github.com/dahai80/fusion-cowork/issues/8) | desk.project.importSnapshot — 接收会话快照导入 | ✅ 已集成 |
+| fusion-cowork | [#9](https://github.com/dahai80/fusion-cowork/issues/9) | desk.project.exportToProject — 导出空间内容到项目 | ✅ 已集成 |
 | fusion-agent-studio | [#35](https://github.com/dahai80/fusion-agent-studio/issues/35) | LangGraph 工作流执行引擎、审批闸断点、上下文沙箱、Skill 注册/执行 | ✅ 已集成 |
 | fusion-cowork | [#4](https://github.com/dahai80/fusion-cowork/issues/4) | 侧边栏入口、工作台会话隔离、权限模型复用、审批通知推送 | ✅ 已集成 |
 | fusion-studio | [#28](https://github.com/dahai80/fusion-studio/issues/28) | 前端路由/页面注册、Canvas 组件复用、Workflow Canvas 集成 | ✅ 已集成（Plugin） |
@@ -208,8 +218,8 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 集成点说明：
 - **OUTPUT_NODE** → `artifact_client` + `rag_client`：工作流产出自动创建 Artifact 并归档到知识库
 - **SKILL_NODE** → `llm_client`：Skill 节点调用 LLM 执行，支持模型列表查询和 Embedding
-- **CONNECTOR_NODE** → `gateway_client`：SaaS 连接器 Action 调用，支持 Connection 全生命周期管理
-- **APPROVAL_GATE_NODE** → `cowork_client`：审批闸通知推送到工作台
+- **CONNECTOR_NODE** → `gateway_client`：SaaS 连接器 Action 调用，支持 Connection 全生命周期管理 + OAuth2 授权流
+- **APPROVAL_GATE_NODE** → `cowork_client`：审批闸通知推送到工作台 + 项目知识库同步/快照导入/空间导出
 
 所有客户端在连接失败时优雅降级，不会阻塞工作流执行。
 

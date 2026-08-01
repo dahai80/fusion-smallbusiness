@@ -330,3 +330,176 @@ async def test_sync_to_project_live(client, ws):
     data = resp.json()
     assert data["success"] is True
     assert data["synced"] == 2
+
+
+# --- OAuth2 Flow ---
+
+
+@pytest.mark.asyncio
+async def test_oauth2_authorize_standalone(client, ws):
+    conn_resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/connector",
+        json={"connectorKey": "quickbooks", "authType": "oauth2"},
+    )
+    assert conn_resp.status_code == 200
+    conn_id = conn_resp.json()["connId"]
+
+    resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/oauth2/authorize",
+        json={"connectorKey": "quickbooks", "redirectUri": "https://example.com/callback", "state": "abc"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+    assert data["state"] == "abc"
+
+
+@pytest.mark.asyncio
+async def test_oauth2_authorize_live(client, ws):
+    conn_resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/connector",
+        json={"connectorKey": "quickbooks", "authType": "oauth2"},
+    )
+    assert conn_resp.status_code == 200
+    conn_id = conn_resp.json()["connId"]
+
+    with patch("fsb.routes.connector.fsb_config") as mock_cfg, \
+         patch("fsb.engine.gateway_client.initiate_oauth2", new_callable=AsyncMock) as mock_oauth:
+        mock_cfg.STANDALONE_MODE = False
+        mock_oauth.return_value = {
+            "success": True,
+            "authorizeUrl": "https://auth.example.com/authorize?code=xyz",
+            "state": "abc",
+        }
+        resp = await client.post(
+            f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/oauth2/authorize",
+            json={"connectorKey": "quickbooks", "redirectUri": "https://example.com/callback", "state": "abc"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "authorizeUrl" in data
+
+
+@pytest.mark.asyncio
+async def test_oauth2_callback_standalone(client, ws):
+    conn_resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/connector",
+        json={"connectorKey": "hubspot", "authType": "oauth2"},
+    )
+    assert conn_resp.status_code == 200
+    conn_id = conn_resp.json()["connId"]
+
+    resp = await client.get(
+        f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/oauth2/callback?code=test_code&state=abc",
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+
+
+@pytest.mark.asyncio
+async def test_oauth2_callback_live(client, ws):
+    conn_resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/connector",
+        json={"connectorKey": "hubspot", "authType": "oauth2"},
+    )
+    assert conn_resp.status_code == 200
+    conn_id = conn_resp.json()["connId"]
+
+    with patch("fsb.routes.connector.fsb_config") as mock_cfg, \
+         patch("fsb.engine.gateway_client.handle_oauth2_callback", new_callable=AsyncMock) as mock_cb:
+        mock_cfg.STANDALONE_MODE = False
+        mock_cb.return_value = {"success": True, "connectionId": "conn_live_123"}
+        resp = await client.get(
+            f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/oauth2/callback?code=test_code&state=abc",
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+
+
+# --- Cowork Project Integration ---
+
+
+@pytest.mark.asyncio
+async def test_sync_knowledge_standalone(client, ws):
+    resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/sync-knowledge",
+        json={"spaceId": "sp1", "files": [{"name": "doc.pdf", "content": "base64data", "folder": "docs"}]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+
+
+@pytest.mark.asyncio
+async def test_sync_knowledge_live(client, ws):
+    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
+         patch("fsb.engine.cowork_client.sync_knowledge", new_callable=AsyncMock) as mock_sync:
+        mock_cfg.STANDALONE_MODE = False
+        mock_sync.return_value = {"status": "success", "data": {"syncedCount": 1}}
+        resp = await client.post(
+            f"/api/v1/fsb/workspace/{ws}/sync-knowledge",
+            json={"spaceId": "sp1", "files": [{"name": "doc.pdf", "content": "base64data", "folder": "docs"}]},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_import_snapshot_standalone(client, ws):
+    resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/import-snapshot",
+        json={"spaceId": "sp1", "snapshot": {"title": "PRD Discussion", "messages": []}},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+
+
+@pytest.mark.asyncio
+async def test_import_snapshot_live(client, ws):
+    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
+         patch("fsb.engine.cowork_client.import_snapshot", new_callable=AsyncMock) as mock_imp:
+        mock_cfg.STANDALONE_MODE = False
+        mock_imp.return_value = {"status": "success", "data": {"importedCount": 1}}
+        resp = await client.post(
+            f"/api/v1/fsb/workspace/{ws}/import-snapshot",
+            json={"spaceId": "sp1", "snapshot": {"title": "PRD Discussion", "messages": []}},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_export_to_project_standalone(client, ws):
+    resp = await client.post(
+        f"/api/v1/fsb/workspace/{ws}/export-to-project",
+        json={"spaceId": "sp1", "items": {"files": True, "chatHistory": True}, "targetProjectId": "proj1"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["standalone"] is True
+
+
+@pytest.mark.asyncio
+async def test_export_to_project_live(client, ws):
+    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
+         patch("fsb.engine.cowork_client.export_to_project", new_callable=AsyncMock) as mock_exp:
+        mock_cfg.STANDALONE_MODE = False
+        mock_exp.return_value = {"status": "success", "data": {"exportedItems": ["file1", "chat1"]}}
+        resp = await client.post(
+            f"/api/v1/fsb/workspace/{ws}/export-to-project",
+            json={"spaceId": "sp1", "items": {"files": True, "chatHistory": True}, "targetProjectId": "proj1"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
