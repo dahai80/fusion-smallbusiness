@@ -1,10 +1,8 @@
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-from fsb.config import FSBConfig
 
 
 def _make_mock_client(method: str, return_value, status_code: int = 200):

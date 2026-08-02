@@ -1,19 +1,11 @@
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from fsb.db.store import Store
 from fsb.engine.runner import WorkflowRunner
-from fsb.models.common import NodeType, RunStatus, TriggerType
+from fsb.models.common import RunStatus, TriggerType
 from fsb.models.execution import RunInstance
-from fsb.models.workflow import (
-    GraphDefinition,
-    ScheduleConfig,
-    Workflow,
-    WorkflowNode,
-    WorkflowEdge,
-)
 
 
 def _simple_graph():
@@ -444,7 +436,7 @@ class TestWorkflowRunnerOutputNode:
         with patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact, \
              patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload:
             mock_artifact.return_value = {"success": True}
-            run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
+            await runner.start("ws1", wf_data.get("wfId", "wf1"))
         mock_upload.assert_not_called()
 
     @pytest.mark.asyncio
@@ -485,7 +477,7 @@ class TestWorkflowRunnerWebhooks:
 
         with patch("fsb.engine.webhook_dispatcher.dispatch_webhook", new_callable=AsyncMock) as mock_dispatch:
             mock_dispatch.return_value = True
-            run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
+            await runner.start("ws1", wf_data.get("wfId", "wf1"))
         mock_dispatch.assert_called_once()
 
     @pytest.mark.asyncio

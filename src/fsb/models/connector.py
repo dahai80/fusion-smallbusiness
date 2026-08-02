@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from .common import AuthStatus, AuthType, gen_id, utc_now
+from .common import AuthStatus, AuthType, gen_id
 
 logger = logging.getLogger(__name__)
 

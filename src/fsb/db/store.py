@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import aiosqlite
 
@@ -145,7 +145,7 @@ class Store:
         elif extra_cols:
             ws_col = self._WS_COL_MAP.get(table, "wsId")
             cols = f"{pk_col}, {ws_col}, data, " + ", ".join(extra_cols.keys())
-            vals = f"?, ?, ?, " + ", ".join(["?"] * len(extra_cols))
+            vals = "?, ?, ?, " + ", ".join(["?"] * len(extra_cols))
             sql = f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({vals})"
             params = [pk, ws_id, payload] + list(extra_cols.values())
         else:

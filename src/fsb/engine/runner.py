@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from ..db.store import Store
 from ..models.common import NodeType, RunStatus, TriggerType, utc_now
@@ -377,7 +377,7 @@ class WorkflowRunner:
 
     async def _archive_output_to_rag(self, run: RunInstance, node: WorkflowNode, output_key: str):
         try:
-            from .rag_client import search, ask, upload_document
+            from .rag_client import upload_document
             extra = node.config.extra if node.config else {}
             kb_id = extra.get("knowledgeBaseId", "")
             if not kb_id:

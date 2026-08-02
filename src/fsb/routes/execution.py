@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from ..db.store import Store
-from ..models.common import ApprovalAction, RunStatus, utc_now
+from ..models.common import ApprovalAction
 from ..models.execution import ApprovalRecord, PendingTask, RunInstance
 
 logger = logging.getLogger(__name__)

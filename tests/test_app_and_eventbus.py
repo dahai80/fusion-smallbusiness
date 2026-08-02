@@ -1,9 +1,8 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
-from fsb.app import app, lifespan, app_state, AppState
+from fsb.app import lifespan, AppState
 from fsb.engine.event_bus import EventBus
 from fsb.models.event import EventTrigger
-from fsb.models.common import TriggerType
 
 
 def test_app_state_has_store():

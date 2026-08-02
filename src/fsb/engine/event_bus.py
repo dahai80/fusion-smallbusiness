@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from ..db.store import Store
 from ..models.common import TriggerType

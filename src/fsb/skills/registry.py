@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from ..models.common import ActionSchema, SkillType
+from ..models.common import SkillType
 from ..models.skill import Skill
 
 logger = logging.getLogger(__name__)
