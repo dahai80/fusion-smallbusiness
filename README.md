@@ -217,10 +217,10 @@ FSB communicates with upstream services via HTTP/JSON-RPC clients. All URLs are 
 
 | Env Variable | Default | Description |
 |--------------|---------|-------------|
-| `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:8892` | fusion-artifacts-engine service URL |
+| `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:11451` | fusion-artifacts-engine service URL |
 | `FSB_FUSION_MLX_URL` | `http://localhost:11434` | fusion-mlx LLM API URL |
-| `FSB_FUSION_GATEWAY_URL` | `http://localhost:8080` | fusion-gateway service URL |
-| `FSB_FUSION_COWORK_URL` | `http://localhost:9760` | fusion-cowork RPC URL |
+| `FSB_FUSION_GATEWAY_URL` | `http://localhost:11444` | fusion-gateway service URL |
+| `FSB_FUSION_COWORK_URL` | `http://localhost:11437` | fusion-cowork RPC URL |
 | `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag KB service URL |
 | `FSB_FUSION_RAG_API_KEY` | _(empty)_ | fusion-rag API Key (optional) |
 | `FSB_LLM_DEFAULT_MODEL` | `default` | Default LLM model name |

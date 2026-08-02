@@ -217,10 +217,10 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 
 | 环境变量 | 默认值 | 说明 |
 |----------|--------|------|
-| `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:8892` | fusion-artifacts-engine 服务地址 |
+| `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:11451` | fusion-artifacts-engine 服务地址 |
 | `FSB_FUSION_MLX_URL` | `http://localhost:11434` | fusion-mlx LLM API 地址 |
-| `FSB_FUSION_GATEWAY_URL` | `http://localhost:8080` | fusion-gateway 服务地址 |
-| `FSB_FUSION_COWORK_URL` | `http://localhost:9760` | fusion-cowork RPC 地址 |
+| `FSB_FUSION_GATEWAY_URL` | `http://localhost:11444` | fusion-gateway 服务地址 |
+| `FSB_FUSION_COWORK_URL` | `http://localhost:11437` | fusion-cowork RPC 地址 |
 | `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag 知识库服务地址 |
 | `FSB_FUSION_RAG_API_KEY` | _(空)_ | fusion-rag API Key（可选） |
 | `FSB_LLM_DEFAULT_MODEL` | `default` | 默认 LLM 模型名 |

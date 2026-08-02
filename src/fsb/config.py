@@ -6,16 +6,16 @@ logger = logging.getLogger(__name__)
 
 class FSBConfig:
     ARTIFACTS_ENGINE_URL: str = os.environ.get(
-        "FSB_ARTIFACTS_ENGINE_URL", "http://127.0.0.1:8892"
+        "FSB_ARTIFACTS_ENGINE_URL", "http://127.0.0.1:11451"
     )
     FUSION_MLX_URL: str = os.environ.get(
         "FSB_FUSION_MLX_URL", "http://localhost:11434"
     )
     FUSION_GATEWAY_URL: str = os.environ.get(
-        "FSB_FUSION_GATEWAY_URL", "http://localhost:8080"
+        "FSB_FUSION_GATEWAY_URL", "http://localhost:11444"
     )
     FUSION_COWORK_URL: str = os.environ.get(
-        "FSB_FUSION_COWORK_URL", "http://localhost:9760"
+        "FSB_FUSION_COWORK_URL", "http://localhost:11437"
     )
     FUSION_RAG_URL: str = os.environ.get(
         "FSB_FUSION_RAG_URL", "http://127.0.0.1:11436"
