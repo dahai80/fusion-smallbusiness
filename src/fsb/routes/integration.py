@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -21,19 +21,19 @@ class CreateArtifactRequest(BaseModel):
     name: str
     type: str = "text"
     content: str = ""
-    projectId: Optional[str] = None
-    runId: Optional[str] = None
+    projectId: str | None = None
+    runId: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SendToCanvasRequest(BaseModel):
-    sessionId: Optional[str] = None
-    outputDir: Optional[str] = None
+    sessionId: str | None = None
+    outputDir: str | None = None
 
 
 class SyncToProjectRequest(BaseModel):
     projectId: str
-    artifactIds: Optional[list[str]] = None
+    artifactIds: list[str] | None = None
 
 
 @router.post("/workflow/{wfId}/send-to-canvas")

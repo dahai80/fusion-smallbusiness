@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from fsb.db.store import Store
 from fsb.engine.scheduler import WorkflowScheduler

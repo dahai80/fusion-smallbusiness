@@ -103,7 +103,7 @@ async def edit_task(wsId: str, taskId: str, body: dict):
 
 
 @router.get("/execution/history")
-async def execution_history(wsId: str, workflowId: str = None, offset: int = 0, limit: int = 100):
+async def execution_history(wsId: str, workflowId: str | None = None, offset: int = 0, limit: int = 100):
     store = get_store()
     items = await store.list_runs(wsId, wf_id=workflowId, offset=offset, limit=limit)
     return items

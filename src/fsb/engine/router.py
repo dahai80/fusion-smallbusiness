@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 from difflib import SequenceMatcher
 
 from ..db.store import Store
@@ -12,13 +11,13 @@ class IntentRouter:
     def __init__(self, store: Store):
         self.store = store
 
-    async def match(self, ws_id: str, query: str) -> Optional[Workflow]:
+    async def match(self, ws_id: str, query: str) -> Workflow | None:
         query = query.strip()
         if query.startswith("/"):
             return await self._match_slash(ws_id, query)
         return await self._match_natural(ws_id, query)
 
-    async def _match_slash(self, ws_id: str, command: str) -> Optional[Workflow]:
+    async def _match_slash(self, ws_id: str, command: str) -> Workflow | None:
         items = await self.store.list_workflows(ws_id)
         for d in items:
             wf = Workflow(**d)
@@ -28,7 +27,7 @@ class IntentRouter:
         logger.info("no slash match for: %s", command)
         return None
 
-    async def _match_natural(self, ws_id: str, query: str) -> Optional[Workflow]:
+    async def _match_natural(self, ws_id: str, query: str) -> Workflow | None:
         items = await self.store.list_workflows(ws_id)
         best_wf = None
         best_score = 0.0

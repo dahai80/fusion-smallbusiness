@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +16,7 @@ class ConnectorCreate(BaseModel):
 
 
 class ConnectorUpdate(BaseModel):
-    authConfig: Optional[dict[str, Any]] = None
+    authConfig: dict[str, Any] | None = None
 
 
 class Connector(BaseModel):
@@ -25,8 +25,8 @@ class Connector(BaseModel):
     connectorKey: str
     authType: AuthType = AuthType.OAUTH2
     authStatus: AuthStatus = AuthStatus.DISCONNECTED
-    connectedAt: Optional[datetime] = None
-    tokenExpiryAt: Optional[datetime] = None
+    connectedAt: datetime | None = None
+    tokenExpiryAt: datetime | None = None
     permissions: list[str] = Field(default_factory=list)
-    lastRefreshAt: Optional[datetime] = None
+    lastRefreshAt: datetime | None = None
     authConfig: dict[str, Any] = Field(default_factory=dict)

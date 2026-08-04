@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Optional
+from typing import ClassVar
 
 import aiosqlite
 
@@ -76,7 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_webhooks_ws ON webhooks(wsId);
 class Store:
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
-        self._db: Optional[aiosqlite.Connection] = None
+        self._db: aiosqlite.Connection | None = None
 
     async def init(self):
         self._db = await aiosqlite.connect(self.db_path)
@@ -90,7 +90,7 @@ class Store:
             await self._db.close()
             logger.info("db closed")
 
-    _PK_MAP = {
+    _PK_MAP: ClassVar[dict[str, str]] = {
         "workspaces": "wsId",
         "connectors": "connId",
         "skills": "skillId",
@@ -103,7 +103,7 @@ class Store:
         "webhooks": "webhookId",
     }
 
-    _WS_COL_MAP = {
+    _WS_COL_MAP: ClassVar[dict[str, str]] = {
         "connectors": "wsId",
         "skills": "wsId",
         "workflows": "wsId",
@@ -118,7 +118,7 @@ class Store:
     def _pk_col(self, table: str) -> str:
         return self._PK_MAP.get(table, table.rstrip("s") + "Id")
 
-    async def _get_one(self, table: str, pk: str, pk_col: str = None) -> Optional[dict]:
+    async def _get_one(self, table: str, pk: str, pk_col: str | None = None) -> dict | None:
         col = pk_col or self._pk_col(table)
         cursor = await self._db.execute(f"SELECT data FROM {table} WHERE {col} = ?", (pk,))
         row = await cursor.fetchone()
@@ -135,7 +135,7 @@ class Store:
         rows = await cursor.fetchall()
         return [json.loads(r["data"]) for r in rows]
 
-    async def _upsert(self, table: str, pk: str, data: dict, ws_id: str = "", extra_cols: dict = None):
+    async def _upsert(self, table: str, pk: str, data: dict, ws_id: str = "", extra_cols: dict | None = None):
         pk_col = self._pk_col(table)
         payload = json.dumps(data, default=str)
         is_root = table == "workspaces"
@@ -147,7 +147,7 @@ class Store:
             cols = f"{pk_col}, {ws_col}, data, " + ", ".join(extra_cols.keys())
             vals = "?, ?, ?, " + ", ".join(["?"] * len(extra_cols))
             sql = f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({vals})"
-            params = [pk, ws_id, payload] + list(extra_cols.values())
+            params = [pk, ws_id, payload, *list(extra_cols.values())]
         else:
             ws_col = self._WS_COL_MAP.get(table, "wsId")
             sql = f"INSERT OR REPLACE INTO {table} ({pk_col}, {ws_col}, data) VALUES (?, ?, ?)"
@@ -155,7 +155,7 @@ class Store:
         await self._db.execute(sql, params)
         await self._db.commit()
 
-    async def _delete(self, table: str, pk: str, pk_col: str = None):
+    async def _delete(self, table: str, pk: str, pk_col: str | None = None):
         col = pk_col or self._pk_col(table)
         await self._db.execute(f"DELETE FROM {table} WHERE {col} = ?", (pk,))
         await self._db.commit()
@@ -166,7 +166,7 @@ class Store:
         await self._db.commit()
 
     # workspace
-    async def get_workspace(self, ws_id: str) -> Optional[dict]:
+    async def get_workspace(self, ws_id: str) -> dict | None:
         return await self._get_one("workspaces", ws_id, "wsId")
 
     async def list_workspaces(self, offset: int = 0, limit: int = 100, search: str = "", project_id: str = "") -> list[dict]:
@@ -197,7 +197,7 @@ class Store:
         logger.info("workspace deleted with cascade: %s", ws_id)
 
     # connector
-    async def get_connector(self, conn_id: str) -> Optional[dict]:
+    async def get_connector(self, conn_id: str) -> dict | None:
         return await self._get_one("connectors", conn_id, "connId")
 
     async def list_connectors(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -210,7 +210,7 @@ class Store:
         await self._delete("connectors", conn_id, "connId")
 
     # skill
-    async def get_skill(self, skill_id: str) -> Optional[dict]:
+    async def get_skill(self, skill_id: str) -> dict | None:
         return await self._get_one("skills", skill_id, "skillId")
 
     async def list_skills(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -223,7 +223,7 @@ class Store:
         await self._delete("skills", skill_id, "skillId")
 
     # workflow
-    async def get_workflow(self, wf_id: str) -> Optional[dict]:
+    async def get_workflow(self, wf_id: str) -> dict | None:
         return await self._get_one("workflows", wf_id, "wfId")
 
     async def list_workflows(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -236,10 +236,10 @@ class Store:
         await self._delete("workflows", wf_id, "wfId")
 
     # run
-    async def get_run(self, run_id: str) -> Optional[dict]:
+    async def get_run(self, run_id: str) -> dict | None:
         return await self._get_one("runs", run_id, "runId")
 
-    async def list_runs(self, ws_id: str, wf_id: str = None, offset: int = 0, limit: int = 100) -> list[dict]:
+    async def list_runs(self, ws_id: str, wf_id: str | None = None, offset: int = 0, limit: int = 100) -> list[dict]:
         if wf_id:
             cursor = await self._db.execute(
                 "SELECT data FROM runs WHERE wsId = ? AND wfId = ? LIMIT ? OFFSET ?",
@@ -257,7 +257,7 @@ class Store:
         await self._upsert("runs", run_id, data, ws_id, {"wfId": wf_id})
 
     # pending task
-    async def get_task(self, task_id: str) -> Optional[dict]:
+    async def get_task(self, task_id: str) -> dict | None:
         return await self._get_one("pending_tasks", task_id, "taskId")
 
     async def list_pending_tasks(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -275,7 +275,7 @@ class Store:
         await self._delete("pending_tasks", task_id, "taskId")
 
     # template
-    async def get_template(self, tpl_id: str) -> Optional[dict]:
+    async def get_template(self, tpl_id: str) -> dict | None:
         return await self._get_one("templates", tpl_id, "templateId")
 
     async def list_templates(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -288,7 +288,7 @@ class Store:
         await self._delete("templates", tpl_id, "templateId")
 
     # event
-    async def get_event(self, event_id: str) -> Optional[dict]:
+    async def get_event(self, event_id: str) -> dict | None:
         return await self._get_one("events", event_id, "eventId")
 
     async def list_events(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -301,7 +301,7 @@ class Store:
         await self._delete("events", event_id, "eventId")
 
     # event subscription
-    async def get_subscription(self, sub_id: str) -> Optional[dict]:
+    async def get_subscription(self, sub_id: str) -> dict | None:
         return await self._get_one("event_subscriptions", sub_id, "subId")
 
     async def list_subscriptions(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:
@@ -326,7 +326,7 @@ class Store:
         return results
 
     # webhook
-    async def get_webhook(self, webhook_id: str) -> Optional[dict]:
+    async def get_webhook(self, webhook_id: str) -> dict | None:
         return await self._get_one("webhooks", webhook_id, "webhookId")
 
     async def list_webhooks(self, ws_id: str, offset: int = 0, limit: int = 100) -> list[dict]:

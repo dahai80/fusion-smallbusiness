@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,12 +19,12 @@ class SkillCreate(BaseModel):
 
 
 class SkillUpdate(BaseModel):
-    name: Optional[str] = None
-    displayName: Optional[str] = None
-    definition: Optional[str] = None
-    inputSchema: Optional[ActionSchema] = None
-    outputFormat: Optional[str] = None
-    enabled: Optional[bool] = None
+    name: str | None = None
+    displayName: str | None = None
+    definition: str | None = None
+    inputSchema: ActionSchema | None = None
+    outputFormat: str | None = None
+    enabled: bool | None = None
 
 
 class Skill(BaseModel):

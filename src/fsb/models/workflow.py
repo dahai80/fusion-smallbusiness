@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -10,14 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class NodeConfig(BaseModel):
-    connectorId: Optional[str] = None
-    action: Optional[str] = None
-    permission: Optional[str] = None
-    skillId: Optional[str] = None
-    label: Optional[str] = None
-    title: Optional[str] = None
-    conditionExpr: Optional[str] = None
-    outputKey: Optional[str] = None
+    connectorId: str | None = None
+    action: str | None = None
+    permission: str | None = None
+    skillId: str | None = None
+    label: str | None = None
+    title: str | None = None
+    conditionExpr: str | None = None
+    outputKey: str | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -30,7 +30,7 @@ class WorkflowNode(BaseModel):
 class WorkflowEdge(BaseModel):
     source: str
     target: str
-    condition: Optional[str] = None
+    condition: str | None = None
 
 
 class GraphDefinition(BaseModel):
@@ -50,13 +50,13 @@ class GraphDefinition(BaseModel):
 
 class ScheduleConfig(BaseModel):
     type: ScheduleType = ScheduleType.MANUAL
-    cron: Optional[str] = None
-    eventTrigger: Optional[str] = None
+    cron: str | None = None
+    eventTrigger: str | None = None
 
 
 class WorkflowCreate(BaseModel):
     name: str
-    slashCommand: Optional[str] = None
+    slashCommand: str | None = None
     displayName: str = ""
     description: str = ""
     version: str = "1.0"
@@ -66,21 +66,21 @@ class WorkflowCreate(BaseModel):
 
 
 class WorkflowUpdate(BaseModel):
-    name: Optional[str] = None
-    slashCommand: Optional[str] = None
-    displayName: Optional[str] = None
-    description: Optional[str] = None
-    version: Optional[str] = None
-    enabled: Optional[bool] = None
-    schedule: Optional[ScheduleConfig] = None
-    graphDefinition: Optional[GraphDefinition] = None
+    name: str | None = None
+    slashCommand: str | None = None
+    displayName: str | None = None
+    description: str | None = None
+    version: str | None = None
+    enabled: bool | None = None
+    schedule: ScheduleConfig | None = None
+    graphDefinition: GraphDefinition | None = None
 
 
 class Workflow(BaseModel):
     wfId: str = Field(default_factory=lambda: gen_id("wf"))
     workspaceId: str = ""
     name: str
-    slashCommand: Optional[str] = None
+    slashCommand: str | None = None
     displayName: str = ""
     description: str = ""
     version: str = "1.0"

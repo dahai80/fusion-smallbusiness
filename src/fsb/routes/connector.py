@@ -31,7 +31,7 @@ async def create_connector(wsId: str, body: ConnectorCreate):
     conn.authStatus = AuthStatus.CONNECTED
     conn.connectedAt = utc_now()
     await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
-    ws["connectorIds"] = list(set(ws.get("connectorIds", []) + [conn.connectorKey]))
+    ws["connectorIds"] = list(set([*ws.get("connectorIds", []), conn.connectorKey]))
     await store.save_workspace(wsId, ws)
     logger.info("connector created: %s in ws %s", conn.connId, wsId)
     return conn

@@ -1,6 +1,6 @@
-import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
+import pytest
 
 # --- Workflow Run with Valid Graph ---
 
@@ -403,8 +403,8 @@ async def test_workspace_import_invalid(client):
 
 async def _create_paused_task(ws, title="test task"):
     from fsb.app import app_state
-    from fsb.models.execution import PendingTask, RunInstance
     from fsb.models.common import RunStatus, TriggerType
+    from fsb.models.execution import PendingTask, RunInstance
     store = app_state.store
     run = RunInstance(
         workspaceId=ws, workflowId="wf1", status=RunStatus.PAUSED,

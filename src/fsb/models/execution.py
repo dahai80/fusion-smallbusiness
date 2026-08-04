@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class NodeTrace(BaseModel):
     nodeId: str
     enterTime: datetime = Field(default_factory=utc_now)
-    exitTime: Optional[datetime] = None
+    exitTime: datetime | None = None
     status: str = "running"
     input: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
@@ -24,7 +24,7 @@ class ApprovalRecord(BaseModel):
     operateUser: str = ""
     action: ApprovalAction = ApprovalAction.APPROVE
     time: datetime = Field(default_factory=utc_now)
-    editContent: Optional[dict[str, Any]] = None
+    editContent: dict[str, Any] | None = None
 
 
 class ContextSandbox(BaseModel):
@@ -42,9 +42,9 @@ class RunInstance(BaseModel):
     triggeredBy: str = ""
     status: RunStatus = RunStatus.RUNNING
     contextSandbox: ContextSandbox = Field(default_factory=ContextSandbox)
-    currentNodeId: Optional[str] = None
+    currentNodeId: str | None = None
     startTime: datetime = Field(default_factory=utc_now)
-    endTime: Optional[datetime] = None
+    endTime: datetime | None = None
     nodeTrace: list[NodeTrace] = Field(default_factory=list)
     approvalRecord: list[ApprovalRecord] = Field(default_factory=list)
 

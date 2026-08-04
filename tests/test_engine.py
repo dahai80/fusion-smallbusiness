@@ -15,7 +15,7 @@ from fsb.models.workflow import (
 )
 
 
-def _make_workflow(name: str, slash: str, nodes: list = None, edges: list = None) -> Workflow:
+def _make_workflow(name: str, slash: str, nodes: list | None = None, edges: list | None = None) -> Workflow:
     default_nodes = [
         WorkflowNode(id="n_start", type=NodeType.START_NODE),
         WorkflowNode(id="n_end", type=NodeType.END_NODE),

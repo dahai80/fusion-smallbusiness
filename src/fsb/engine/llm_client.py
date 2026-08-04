@@ -74,8 +74,8 @@ async def create_embedding(
 
 async def chat_completion(
     model: str = "",
-    messages: list[dict] = None,
-    tools: list[dict] = None,
+    messages: list[dict] | None = None,
+    tools: list[dict] | None = None,
     temperature: float = 0.7,
     max_tokens: int = 2048,
 ) -> dict[str, Any]:
@@ -108,7 +108,7 @@ async def chat_completion(
 async def execute_skill_prompt(
     skill_definition: str,
     input_data: dict,
-    variables: dict = None,
+    variables: dict | None = None,
     model: str = "",
 ) -> dict[str, Any]:
     user_content = json.dumps(input_data, ensure_ascii=False) if input_data else ""

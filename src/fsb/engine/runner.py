@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from ..db.store import Store
 from ..models.common import NodeType, RunStatus, TriggerType, utc_now
@@ -17,7 +16,7 @@ class WorkflowRunner:
         self,
         ws_id: str,
         wf_id: str,
-        input_data: dict = None,
+        input_data: dict | None = None,
         triggered_by: str = "",
         trigger_type: TriggerType = TriggerType.MANUAL,
     ) -> RunInstance:
@@ -170,10 +169,7 @@ class WorkflowRunner:
             color[node_id] = BLACK
             return False
 
-        for n in graph.nodes:
-            if color[n.id] == WHITE and dfs(n.id):
-                return True
-        return False
+        return any(color[n.id] == WHITE and dfs(n.id) for n in graph.nodes)
 
     def _has_approval_gate_upstream(self, graph: GraphDefinition, node_id: str) -> bool:
         reverse_adj: dict[str, list[str]] = {n.id: [] for n in graph.nodes}
@@ -309,14 +305,14 @@ class WorkflowRunner:
             run.endTime = utc_now()
             await self.store.save_run(run.runId, run.workspaceId, run.workflowId, run.model_dump(mode="json"))
 
-    def _find_node(self, graph: GraphDefinition, node_id: str) -> Optional[WorkflowNode]:
+    def _find_node(self, graph: GraphDefinition, node_id: str) -> WorkflowNode | None:
         for n in graph.nodes:
             if n.id == node_id:
                 return n
         return None
 
     def _get_next_nodes(
-        self, graph: GraphDefinition, node_id: str, condition: str = None
+        self, graph: GraphDefinition, node_id: str, condition: str | None = None
     ) -> list[WorkflowNode]:
         edges = graph.edges
         next_ids = []
@@ -325,9 +321,8 @@ class WorkflowRunner:
                 if condition and e.condition:
                     if e.condition == condition:
                         next_ids.append(e.target)
-                elif not e.condition:
-                    if condition is None:
-                        next_ids.append(e.target)
+                elif not e.condition and condition is None:
+                    next_ids.append(e.target)
         result = []
         for nid in next_ids:
             node = self._find_node(graph, nid)
@@ -384,8 +379,8 @@ class WorkflowRunner:
                 logger.debug("no knowledgeBaseId configured for output node, skip rag archive")
                 return
             import json
-            import tempfile
             import os
+            import tempfile
             content = json.dumps(run.contextSandbox.inputData, ensure_ascii=False, indent=2)
             tmp_dir = tempfile.mkdtemp(prefix="fsb_rag_")
             tmp_path = os.path.join(tmp_dir, f"{output_key}_{run.runId[:8]}.json")

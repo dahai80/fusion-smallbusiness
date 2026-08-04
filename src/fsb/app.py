@@ -4,7 +4,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .db.store import Store
-from .routes import connector, execution, external, integration, skill, variable, workflow, workspace
+from .routes import (
+    connector,
+    execution,
+    external,
+    integration,
+    skill,
+    variable,
+    workflow,
+    workspace,
+)
 
 logger = logging.getLogger(__name__)
 
