@@ -477,7 +477,7 @@ class TestFSBConfig:
     def test_default_values(self):
         config = FSBConfig()
         assert "127.0.0.1" in config.ARTIFACTS_ENGINE_URL
-        assert "11434" in config.FUSION_MLX_URL
+        assert "11432" in config.FUSION_MLX_URL
         assert "11444" in config.FUSION_GATEWAY_URL
         assert "11437" in config.FUSION_COWORK_URL
         assert "11436" in config.FUSION_RAG_URL
