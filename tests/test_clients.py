@@ -4,7 +4,6 @@ import httpx
 import pytest
 
 
-
 def _make_mock_client(method: str, return_value, status_code: int = 200):
     mock_resp = MagicMock()
     mock_resp.status_code = status_code
@@ -514,7 +513,7 @@ class TestRAGClientErrors:
 
     @pytest.mark.asyncio
     async def test_rag_helpers(self):
-        from fsb.engine.rag_client import _rag_url, _api_headers
+        from fsb.engine.rag_client import _api_headers, _rag_url
         url = _rag_url("/kb/bases")
         assert "/kb/bases" in url
         headers = _api_headers()

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -199,7 +199,7 @@ async def search(
     threshold: float = 0.0,
     hybrid: bool = False,
     rerank: bool = False,
-    folder_prefix: Optional[str] = None,
+    folder_prefix: str | None = None,
 ) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}/search")
     payload: dict[str, Any] = {
@@ -234,8 +234,8 @@ async def ask(
     model: str = "",
     hybrid: bool = False,
     rerank: bool = False,
-    folder_prefix: Optional[str] = None,
-    history: Optional[list] = None,
+    folder_prefix: str | None = None,
+    history: list | None = None,
 ) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}/ask")
     payload: dict[str, Any] = {

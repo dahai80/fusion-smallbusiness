@@ -9,7 +9,7 @@ class FSBConfig:
         "FSB_ARTIFACTS_ENGINE_URL", "http://127.0.0.1:11451"
     )
     FUSION_MLX_URL: str = os.environ.get(
-        "FSB_FUSION_MLX_URL", "http://localhost:11434"
+        "FSB_FUSION_MLX_URL", "http://localhost:11432"
     )
     FUSION_GATEWAY_URL: str = os.environ.get(
         "FSB_FUSION_GATEWAY_URL", "http://localhost:11444"

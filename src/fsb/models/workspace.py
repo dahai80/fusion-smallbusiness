@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,16 +11,16 @@ logger = logging.getLogger(__name__)
 class WorkspaceCreate(BaseModel):
     title: str
     description: str = ""
-    projectId: Optional[str] = None
-    bindAgentId: Optional[str] = None
+    projectId: str | None = None
+    bindAgentId: str | None = None
     variables: list[Variable] = Field(default_factory=list)
 
 
 class WorkspaceUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    projectId: Optional[str] = None
-    bindAgentId: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    projectId: str | None = None
+    bindAgentId: str | None = None
 
 
 class Workspace(BaseModel):
@@ -29,8 +28,8 @@ class Workspace(BaseModel):
     title: str
     description: str = ""
     ownerUserId: str = ""
-    projectId: Optional[str] = None
-    bindAgentId: Optional[str] = None
+    projectId: str | None = None
+    bindAgentId: str | None = None
     variables: list[Variable] = Field(default_factory=list)
     connectorIds: list[str] = Field(default_factory=list)
     skillIds: list[str] = Field(default_factory=list)

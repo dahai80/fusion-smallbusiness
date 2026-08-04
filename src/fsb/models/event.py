@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -23,6 +23,6 @@ class EventSubscription(BaseModel):
     workspaceId: str
     workflowId: str
     eventType: str
-    source: Optional[str] = None
+    source: str | None = None
     enabled: bool = True
     createTime: datetime = Field(default_factory=utc_now)

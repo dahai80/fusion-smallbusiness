@@ -39,7 +39,7 @@ async def create_skill(wsId: str, body: SkillCreate):
         raise HTTPException(status_code=404, detail="workspace not found")
     sk = Skill(workspaceId=wsId, **body.model_dump())
     await store.save_skill(sk.skillId, wsId, sk.model_dump(mode="json"))
-    ws["skillIds"] = list(set(ws.get("skillIds", []) + [sk.skillId]))
+    ws["skillIds"] = list(set([*ws.get("skillIds", []), sk.skillId]))
     await store.save_workspace(wsId, ws)
     logger.info("skill created: %s in ws %s", sk.skillId, wsId)
     return sk
@@ -76,7 +76,7 @@ async def delete_skill(wsId: str, skillId: str):
 
 
 @router.post("/{skillId}/test")
-async def test_skill(wsId: str, skillId: str, body: dict = None):
+async def test_skill(wsId: str, skillId: str, body: dict | None = None):
     store = get_store()
     data = await store.get_skill(skillId)
     if not data or data.get("workspaceId") != wsId:

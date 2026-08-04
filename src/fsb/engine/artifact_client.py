@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -14,11 +14,11 @@ async def create_external_artifact(
     name: str,
     artifact_type: str,
     content: str,
-    workflow_run_id: Optional[str] = None,
+    workflow_run_id: str | None = None,
     summary: str = "",
-    kind: Optional[str] = None,
-    project_id: Optional[str] = None,
-    metadata: Optional[dict] = None,
+    kind: str | None = None,
+    project_id: str | None = None,
+    metadata: dict | None = None,
 ) -> dict[str, Any]:
     url = f"{fsb_config.ARTIFACTS_ENGINE_URL}/api/v1/external/create"
     payload = {

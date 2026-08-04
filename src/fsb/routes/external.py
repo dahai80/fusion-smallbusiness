@@ -17,7 +17,7 @@ def get_store() -> Store:
 
 
 @router.post("/workflow/{wfId}/trigger")
-async def external_trigger(wfId: str, body: dict = None):
+async def external_trigger(wfId: str, body: dict | None = None):
     store = get_store()
     data = await store.get_workflow(wfId)
     if not data:

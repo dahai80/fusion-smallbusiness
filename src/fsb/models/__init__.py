@@ -26,6 +26,7 @@ from .execution import (
     RunInstance,
 )
 from .skill import Skill, SkillCreate, SkillUpdate
+from .webhook import Webhook
 from .workflow import (
     GraphDefinition,
     NodeConfig,
@@ -36,7 +37,6 @@ from .workflow import (
     WorkflowNode,
     WorkflowUpdate,
 )
-from .webhook import Webhook
 from .workspace import Workspace, WorkspaceCreate, WorkspaceUpdate
 
 __all__ = [

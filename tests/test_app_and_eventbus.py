@@ -1,6 +1,8 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
-from fsb.app import lifespan, AppState
+
+from fsb.app import AppState, lifespan
 from fsb.engine.event_bus import EventBus
 from fsb.models.event import EventTrigger
 

@@ -47,7 +47,7 @@ async def register_module(
     icon: str = "",
     route_path: str = "",
     enabled: bool = True,
-    metadata: dict = None,
+    metadata: dict | None = None,
 ) -> dict[str, Any]:
     result = await _rpc_call("desk.module.register", {
         "module_id": module_id,
@@ -68,7 +68,7 @@ async def push_notification(
     notification_type: str,
     title: str,
     content: str = "",
-    metadata: dict = None,
+    metadata: dict | None = None,
 ) -> dict[str, Any]:
     result = await _rpc_call("desk.notification.push", {
         "space_id": space_id,

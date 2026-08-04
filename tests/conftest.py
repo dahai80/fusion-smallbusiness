@@ -1,6 +1,6 @@
 import os
-import pytest_asyncio
 
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from fsb.app import app, app_state

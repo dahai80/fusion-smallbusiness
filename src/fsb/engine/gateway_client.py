@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -26,7 +26,7 @@ async def list_connectors() -> dict[str, Any]:
 async def execute_action(
     connector_key: str,
     action_key: str,
-    params: dict = None,
+    params: dict | None = None,
     connection_id: str = "",
 ) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connector/{connector_key}/action/{action_key}"
@@ -58,7 +58,7 @@ async def execute_action(
 async def test_action(
     connector_key: str,
     action_key: str,
-    params: dict = None,
+    params: dict | None = None,
 ) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connector/test"
     payload = {
@@ -100,7 +100,7 @@ async def create_connection(
     connector_key: str,
     auth_type: str = "oauth2",
     status: str = "active",
-    expires_at: Optional[str] = None,
+    expires_at: str | None = None,
 ) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connection"
     payload: dict[str, Any] = {

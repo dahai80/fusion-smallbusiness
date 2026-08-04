@@ -1,7 +1,7 @@
 import logging
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -10,14 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def gen_id(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex[:12]}"
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     START_NODE = "START_NODE"
     CONNECTOR_NODE = "CONNECTOR_NODE"
     SKILL_NODE = "SKILL_NODE"
@@ -27,7 +27,7 @@ class NodeType(str, Enum):
     END_NODE = "END_NODE"
 
 
-class RunStatus(str, Enum):
+class RunStatus(StrEnum):
     COMPLETED = "COMPLETED"
     RUNNING = "RUNNING"
     PAUSED = "PAUSED"
@@ -35,45 +35,45 @@ class RunStatus(str, Enum):
     TERMINATED = "TERMINATED"
 
 
-class TriggerType(str, Enum):
+class TriggerType(StrEnum):
     MANUAL = "manual"
     SCHEDULE = "schedule"
     EXTERNAL_API = "external_api"
     EVENT = "event"
 
 
-class AuthType(str, Enum):
+class AuthType(StrEnum):
     OAUTH2 = "oauth2"
     API_KEY = "api_key"
     BASIC_AUTH = "basic_auth"
 
 
-class AuthStatus(str, Enum):
+class AuthStatus(StrEnum):
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     EXPIRED = "expired"
     ERROR = "error"
 
 
-class SkillType(str, Enum):
+class SkillType(StrEnum):
     PROMPT = "prompt"
     FUNCTION = "function"
     API_CALL = "api_call"
 
 
-class ApprovalAction(str, Enum):
+class ApprovalAction(StrEnum):
     APPROVE = "approve"
     DENY = "deny"
     EDIT = "edit"
 
 
-class ScheduleType(str, Enum):
+class ScheduleType(StrEnum):
     MANUAL = "manual"
     CRON = "cron"
     EVENT = "event"
 
 
-class ConnectorPermission(str, Enum):
+class ConnectorPermission(StrEnum):
     READ = "read"
     WRITE = "write"
 
@@ -81,7 +81,7 @@ class ConnectorPermission(str, Enum):
 class Variable(BaseModel):
     key: str
     value: Any
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class ApiCallConfig(BaseModel):

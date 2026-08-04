@@ -31,7 +31,7 @@ async def create_workflow(wsId: str, body: WorkflowCreate):
         raise HTTPException(status_code=404, detail="workspace not found")
     wf = Workflow(workspaceId=wsId, **body.model_dump())
     await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))
-    ws["workflowIds"] = list(set(ws.get("workflowIds", []) + [wf.wfId]))
+    ws["workflowIds"] = list(set([*ws.get("workflowIds", []), wf.wfId]))
     await store.save_workspace(wsId, ws)
     logger.info("workflow created: %s in ws %s", wf.wfId, wsId)
     return wf
@@ -78,7 +78,7 @@ async def delete_workflow(wsId: str, wfId: str):
 
 
 @router.post("/{wfId}/run")
-async def run_workflow(wsId: str, wfId: str, body: dict = None):
+async def run_workflow(wsId: str, wfId: str, body: dict | None = None):
     store = get_store()
     data = await store.get_workflow(wfId)
     if not data or data.get("workspaceId") != wsId:
@@ -92,7 +92,7 @@ async def run_workflow(wsId: str, wfId: str, body: dict = None):
         logger.info("workflow run started: %s for wf %s", run.runId, wfId)
         return run.model_dump(mode="json")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/{wfId}/schedule")
@@ -102,8 +102,8 @@ async def set_schedule(wsId: str, wfId: str, body: dict):
     if not data or data.get("workspaceId") != wsId:
         raise HTTPException(status_code=404, detail="workflow not found")
     wf = Workflow(**data)
-    from ..models.workflow import ScheduleConfig
     from ..models.common import ScheduleType
+    from ..models.workflow import ScheduleConfig
     sched = ScheduleConfig(
         type=ScheduleType(body.get("type", "cron")),
         cron=body.get("cron"),
@@ -123,8 +123,8 @@ async def delete_schedule(wsId: str, wfId: str, scheduleId: str):
     if not data or data.get("workspaceId") != wsId:
         raise HTTPException(status_code=404, detail="workflow not found")
     wf = Workflow(**data)
-    from ..models.workflow import ScheduleConfig
     from ..models.common import ScheduleType
+    from ..models.workflow import ScheduleConfig
     wf.schedule = ScheduleConfig(type=ScheduleType.MANUAL)
     wf.updateTime = utc_now()
     await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))
@@ -140,7 +140,7 @@ async def import_workflow(wsId: str, body: dict):
         raise HTTPException(status_code=404, detail="workspace not found")
     wf = Workflow(workspaceId=wsId, **body)
     await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))
-    ws["workflowIds"] = list(set(ws.get("workflowIds", []) + [wf.wfId]))
+    ws["workflowIds"] = list(set([*ws.get("workflowIds", []), wf.wfId]))
     await store.save_workspace(wsId, ws)
     logger.info("workflow imported: %s into ws %s", wf.wfId, wsId)
     return wf
