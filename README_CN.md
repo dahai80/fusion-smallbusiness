@@ -141,8 +141,9 @@ tests/
 cd /path/to/fusion-smallbusiness
 source .venv/bin/activate
 
-# 启动服务
-uvicorn fsb.app:app --host 0.0.0.0 --port 8000
+# 启动服务（默认端口 11456，可通过 FSB_SERVER_PORT 配置）
+fusion-smallbusiness
+# 或: uvicorn fsb.app:app --host 0.0.0.0 --port 11456
 
 # 运行测试（291 用例，覆盖率 95%）
 pytest tests/ -v

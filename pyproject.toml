@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fusion-smallbusiness"
-version = "0.1.2"
+version = "0.1.3"
 description = "Fusion Small Business - Cross-SaaS intelligent business workspace"
 requires-python = ">=3.11"
 dependencies = [
@@ -26,6 +26,9 @@ dev = [
     "pytest-cov>=5.0.0",
     "httpx>=0.27.0",
 ]
+
+[project.scripts]
+fusion-smallbusiness = "fsb.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

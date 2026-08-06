@@ -484,3 +484,5 @@ class TestFSBConfig:
         assert config.HTTP_TIMEOUT > 0
         assert config.EMBEDDING_MODEL == "BGE-M3"
         assert isinstance(config.STANDALONE_MODE, bool)
+        assert config.SERVER_PORT == 11456
+        assert config.SERVER_HOST == "0.0.0.0"

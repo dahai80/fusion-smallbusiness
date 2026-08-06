@@ -141,8 +141,9 @@ All endpoints prefixed with `/api/v1/fsb`
 cd /path/to/fusion-smallbusiness
 source .venv/bin/activate
 
-# Start the server
-uvicorn fsb.app:app --host 0.0.0.0 --port 8000
+# Start the server (default port 11456, configurable via FSB_SERVER_PORT)
+fusion-smallbusiness
+# or: uvicorn fsb.app:app --host 0.0.0.0 --port 11456
 
 # Run tests (291 tests, 95% coverage)
 pytest tests/ -v
