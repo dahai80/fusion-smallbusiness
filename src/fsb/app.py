@@ -53,7 +53,7 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(
     title="Fusion Small Business",
-    version="0.1.0",
+    version="0.1.4",
     description="Cross-SaaS intelligent business workspace API",
     lifespan=lifespan,
 )
