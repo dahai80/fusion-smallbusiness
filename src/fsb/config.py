@@ -32,7 +32,7 @@ class FSBConfig:
     HTTP_TIMEOUT: int = int(os.environ.get("FSB_HTTP_TIMEOUT", "10"))
     STANDALONE_MODE: bool = os.environ.get("FSB_STANDALONE_MODE", "true").lower() in ("true", "1", "yes")
     SERVER_HOST: str = os.environ.get("FSB_SERVER_HOST", "0.0.0.0")
-    SERVER_PORT: int = int(os.environ.get("FSB_SERVER_PORT", "11456"))
+    SERVER_PORT: int = int(os.environ.get("FSB_SERVER_PORT", "11490"))
 
 
 fsb_config = FSBConfig()
