@@ -1,2 +1,23 @@
 CLAUDE.md
 PLAN.md
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build / packaging
+*.egg-info/
+*.egg
+build/
+dist/
+
+# Test / coverage
+.coverage
+.coverage.*
+coverage.json
+htmlcov/
+.pytest_cache/
+
+# Misc
+.DS_Store
