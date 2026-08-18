@@ -19,5 +19,9 @@ coverage.json
 htmlcov/
 .pytest_cache/
 
+# Runtime data (SQLite stores)
+*.db
+test_fsb_data.db
+
 # Misc
 .DS_Store
