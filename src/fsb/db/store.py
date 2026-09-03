@@ -169,7 +169,9 @@ class Store:
     async def get_workspace(self, ws_id: str) -> dict | None:
         return await self._get_one("workspaces", ws_id, "wsId")
 
-    async def list_workspaces(self, offset: int = 0, limit: int = 100, search: str = "", project_id: str = "") -> list[dict]:
+    async def list_workspaces(
+        self, offset: int = 0, limit: int = 100, search: str = "", project_id: str = ""
+    ) -> list[dict]:
         sql = "SELECT data FROM workspaces"
         conditions = []
         params = []
@@ -191,7 +193,17 @@ class Store:
         await self._upsert("workspaces", ws_id, data)
 
     async def delete_workspace(self, ws_id: str):
-        for table in ["connectors", "skills", "workflows", "runs", "pending_tasks", "templates", "events", "event_subscriptions", "webhooks"]:
+        for table in [
+            "connectors",
+            "skills",
+            "workflows",
+            "runs",
+            "pending_tasks",
+            "templates",
+            "events",
+            "event_subscriptions",
+            "webhooks",
+        ]:
             await self._delete_by_workspace(table, ws_id)
         await self._delete("workspaces", ws_id, "wsId")
         logger.info("workspace deleted with cascade: %s", ws_id)

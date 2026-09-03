@@ -15,8 +15,10 @@ def test_app_state_has_store():
 @pytest.mark.asyncio
 async def test_lifespan_register_success():
     mock_app = MagicMock()
-    with patch("fsb.app.app_state") as mock_state, \
-         patch("fsb.engine.cowork_client.register_module", new_callable=AsyncMock) as mock_reg:
+    with (
+        patch("fsb.app.app_state") as mock_state,
+        patch("fsb.engine.cowork_client.register_module", new_callable=AsyncMock) as mock_reg,
+    ):
         mock_state.store.init = AsyncMock()
         mock_state.store.close = AsyncMock()
         mock_reg.return_value = {"status": "success"}
@@ -28,8 +30,10 @@ async def test_lifespan_register_success():
 @pytest.mark.asyncio
 async def test_lifespan_register_failure():
     mock_app = MagicMock()
-    with patch("fsb.app.app_state") as mock_state, \
-         patch("fsb.engine.cowork_client.register_module", new_callable=AsyncMock) as mock_reg:
+    with (
+        patch("fsb.app.app_state") as mock_state,
+        patch("fsb.engine.cowork_client.register_module", new_callable=AsyncMock) as mock_reg,
+    ):
         mock_state.store.init = AsyncMock()
         mock_state.store.close = AsyncMock()
         mock_reg.side_effect = Exception("connection refused")
@@ -41,8 +45,10 @@ async def test_lifespan_register_failure():
 @pytest.mark.asyncio
 async def test_lifespan_register_non_success():
     mock_app = MagicMock()
-    with patch("fsb.app.app_state") as mock_state, \
-         patch("fsb.engine.cowork_client.register_module", new_callable=AsyncMock) as mock_reg:
+    with (
+        patch("fsb.app.app_state") as mock_state,
+        patch("fsb.engine.cowork_client.register_module", new_callable=AsyncMock) as mock_reg,
+    ):
         mock_state.store.init = AsyncMock()
         mock_state.store.close = AsyncMock()
         mock_reg.return_value = {"status": "error", "message": "not available"}
@@ -62,9 +68,11 @@ async def test_health_endpoint(client):
 @pytest.mark.asyncio
 async def test_event_bus_publish_no_workspace_id():
     store = MagicMock()
-    store.find_matching_subscriptions = AsyncMock(return_value=[
-        {"subId": "s1", "workspaceId": "ws1", "workflowId": "wf1"},
-    ])
+    store.find_matching_subscriptions = AsyncMock(
+        return_value=[
+            {"subId": "s1", "workspaceId": "ws1", "workflowId": "wf1"},
+        ]
+    )
     store.save_event = AsyncMock()
     bus = EventBus(store)
     event = EventTrigger(
@@ -87,10 +95,12 @@ async def test_event_bus_publish_no_workspace_id():
 @pytest.mark.asyncio
 async def test_event_bus_publish_with_workspace_id():
     store = MagicMock()
-    store.find_matching_subscriptions = AsyncMock(return_value=[
-        {"subId": "s1", "workspaceId": "ws1", "workflowId": "wf1"},
-        {"subId": "s2", "workspaceId": "ws2", "workflowId": "wf2"},
-    ])
+    store.find_matching_subscriptions = AsyncMock(
+        return_value=[
+            {"subId": "s1", "workspaceId": "ws1", "workflowId": "wf1"},
+            {"subId": "s2", "workspaceId": "ws2", "workflowId": "wf2"},
+        ]
+    )
     store.save_event = AsyncMock()
     bus = EventBus(store)
     event = EventTrigger(
@@ -112,9 +122,11 @@ async def test_event_bus_publish_with_workspace_id():
 @pytest.mark.asyncio
 async def test_event_bus_publish_trigger_error():
     store = MagicMock()
-    store.find_matching_subscriptions = AsyncMock(return_value=[
-        {"subId": "s1", "workspaceId": "ws1", "workflowId": "wf1"},
-    ])
+    store.find_matching_subscriptions = AsyncMock(
+        return_value=[
+            {"subId": "s1", "workspaceId": "ws1", "workflowId": "wf1"},
+        ]
+    )
     store.save_event = AsyncMock()
     bus = EventBus(store)
     event = EventTrigger(
@@ -135,10 +147,12 @@ async def test_event_bus_publish_trigger_error():
 @pytest.mark.asyncio
 async def test_event_bus_publish_sub_missing_fields():
     store = MagicMock()
-    store.find_matching_subscriptions = AsyncMock(return_value=[
-        {"subId": "s1", "workspaceId": "ws1"},
-        {"subId": "s2", "workflowId": "wf1"},
-    ])
+    store.find_matching_subscriptions = AsyncMock(
+        return_value=[
+            {"subId": "s1", "workspaceId": "ws1"},
+            {"subId": "s2", "workflowId": "wf1"},
+        ]
+    )
     store.save_event = AsyncMock()
     bus = EventBus(store)
     event = EventTrigger(

@@ -219,7 +219,7 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 | 环境变量 | 默认值 | 说明 |
 |----------|--------|------|
 | `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:11451` | fusion-artifacts-engine 服务地址 |
-| `FSB_FUSION_MLX_URL` | `http://localhost:11434` | fusion-mlx LLM API 地址 |
+| `FSB_FUSION_MLX_URL` | `http://localhost:11432` | fusion-mlx LLM API 地址（经 fusion-gateway） |
 | `FSB_FUSION_GATEWAY_URL` | `http://localhost:11444` | fusion-gateway 服务地址 |
 | `FSB_FUSION_COWORK_URL` | `http://localhost:11437` | fusion-cowork RPC 地址 |
 | `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag 知识库服务地址 |
@@ -227,7 +227,10 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 | `FSB_LLM_DEFAULT_MODEL` | `default` | 默认 LLM 模型名 |
 | `FSB_EMBEDDING_MODEL` | `BGE-M3` | 默认 Embedding 模型名 |
 | `FSB_HTTP_TIMEOUT` | `10` | HTTP 请求超时（秒） |
-| `FSB_STANDALONE_MODE` | `true` | 独立模式：true 时集成路由返回 stub 响应，避免上游不可用时报错 |
+| `FSB_STANDALONE_MODE` | `true` | 独立模式：true 时集成路由返回 stub 响应，且跳过租户/认证中间件 |
+| `FSB_FUSION_IDENTITY_URL` | `http://127.0.0.1:11470` | fusion-identity JWT 校验端点（多租户认证） |
+| `FSB_FUSION_IDENTITY_SERVICE_TOKEN` | _(空)_ | 调用 `POST /api/v1/auth/verify` 的服务令牌 |
+| `FSB_AUTH_REQUIRE_JWT` | `true` | 非豁免路由是否强制校验 JWT（仅在非独立模式下生效） |
 
 集成点说明：
 
@@ -237,6 +240,18 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 - **APPROVAL_GATE_NODE** → `cowork_client`：审批闸通知推送到工作台 + 项目知识库同步/快照导入/空间导出
 
 所有客户端在连接失败时优雅降级，不会阻塞工作流执行。
+
+### 多租户认证（fusion-identity）
+
+非独立模式下（`FSB_STANDALONE_MODE=false`），所有 `/workspace/{wsId}/*` 路由通过 [fusion-identity](https://github.com/dahai80/fusion-identity)（Fusion 生态唯一的 JWT 签发方与租户注册中心）进行认证：
+
+- 每个非豁免请求需携带 `X-Tenant-Id` 头 + `Authorization: Bearer <JWT>`。
+- JWT 通过 `POST {FSB_FUSION_IDENTITY_URL}/api/v1/auth/verify` 校验（由 `FSB_FUSION_IDENTITY_SERVICE_TOKEN` 网关控制）。
+- JWT 的 `tid` 声明必须与 `X-Tenant-Id` 头一致（不一致返回 401）。
+- 路径中的 `{wsId}` 绑定到已校验租户——访问其他租户的工作区返回 403。
+- 已吊销的 token 返回 401。
+
+独立模式（默认）下跳过认证中间件，路由无鉴权运行——与 fail-soft 开发/测试基线一致。
 
 ## fusion-studio 插件
 

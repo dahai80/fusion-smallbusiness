@@ -1,18 +1,24 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..db.store import Store
 from ..models.common import utc_now
 from ..models.workflow import Workflow, WorkflowCreate, WorkflowUpdate
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workspace/{wsId}/workflow", tags=["workflow"])
+router = APIRouter(
+    prefix="/workspace/{wsId}/workflow",
+    tags=["workflow"],
+    dependencies=[Depends(ws_tenant_dep)],
+)
 
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -84,6 +90,7 @@ async def run_workflow(wsId: str, wfId: str, body: dict | None = None):
     if not data or data.get("workspaceId") != wsId:
         raise HTTPException(status_code=404, detail="workflow not found")
     from ..engine.runner import WorkflowRunner
+
     runner = WorkflowRunner(store)
     input_data = (body or {}).get("inputData", {})
     triggered_by = (body or {}).get("triggeredBy", "")
@@ -104,6 +111,7 @@ async def set_schedule(wsId: str, wfId: str, body: dict):
     wf = Workflow(**data)
     from ..models.common import ScheduleType
     from ..models.workflow import ScheduleConfig
+
     sched = ScheduleConfig(
         type=ScheduleType(body.get("type", "cron")),
         cron=body.get("cron"),
@@ -125,6 +133,7 @@ async def delete_schedule(wsId: str, wfId: str, scheduleId: str):
     wf = Workflow(**data)
     from ..models.common import ScheduleType
     from ..models.workflow import ScheduleConfig
+
     wf.schedule = ScheduleConfig(type=ScheduleType.MANUAL)
     wf.updateTime = utc_now()
     await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))

@@ -1,17 +1,23 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..db.store import Store
 from ..models.skill import Skill, SkillCreate, SkillUpdate
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workspace/{wsId}/skill", tags=["skill"])
+router = APIRouter(
+    prefix="/workspace/{wsId}/skill",
+    tags=["skill"],
+    dependencies=[Depends(ws_tenant_dep)],
+)
 
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 

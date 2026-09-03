@@ -44,11 +44,17 @@ async def test_register_workflow_not_found():
 
 @pytest.mark.asyncio
 async def test_register_non_cron_schedule_skipped():
-    store = _mock_store(wf_data={"name": "wf1", "schedule": {"type": "manual"}, "graphDefinition": {
-        "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
-        "edges": [{"source": "n1", "target": "n2"}],
-        "entryNode": "n1",
-    }})
+    store = _mock_store(
+        wf_data={
+            "name": "wf1",
+            "schedule": {"type": "manual"},
+            "graphDefinition": {
+                "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
+                "edges": [{"source": "n1", "target": "n2"}],
+                "entryNode": "n1",
+            },
+        }
+    )
     scheduler = WorkflowScheduler(store)
     scheduler.start()
     await scheduler.register("ws1", "wf1")
@@ -59,11 +65,17 @@ async def test_register_non_cron_schedule_skipped():
 
 @pytest.mark.asyncio
 async def test_register_invalid_cron_format():
-    store = _mock_store(wf_data={"name": "wf1", "schedule": {"type": "cron", "cron": "bad"}, "graphDefinition": {
-        "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
-        "edges": [{"source": "n1", "target": "n2"}],
-        "entryNode": "n1",
-    }})
+    store = _mock_store(
+        wf_data={
+            "name": "wf1",
+            "schedule": {"type": "cron", "cron": "bad"},
+            "graphDefinition": {
+                "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
+                "edges": [{"source": "n1", "target": "n2"}],
+                "entryNode": "n1",
+            },
+        }
+    )
     scheduler = WorkflowScheduler(store)
     scheduler.start()
     await scheduler.register("ws1", "wf1")
@@ -74,11 +86,17 @@ async def test_register_invalid_cron_format():
 
 @pytest.mark.asyncio
 async def test_register_valid_cron():
-    store = _mock_store(wf_data={"name": "wf1", "schedule": {"type": "cron", "cron": "0 9 * * 1"}, "graphDefinition": {
-        "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
-        "edges": [{"source": "n1", "target": "n2"}],
-        "entryNode": "n1",
-    }})
+    store = _mock_store(
+        wf_data={
+            "name": "wf1",
+            "schedule": {"type": "cron", "cron": "0 9 * * 1"},
+            "graphDefinition": {
+                "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
+                "edges": [{"source": "n1", "target": "n2"}],
+                "entryNode": "n1",
+            },
+        }
+    )
     scheduler = WorkflowScheduler(store)
     scheduler.start()
     await scheduler.register("ws1", "wf1")
@@ -90,11 +108,17 @@ async def test_register_valid_cron():
 
 @pytest.mark.asyncio
 async def test_unregister():
-    store = _mock_store(wf_data={"name": "wf1", "schedule": {"type": "cron", "cron": "0 9 * * 1"}, "graphDefinition": {
-        "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
-        "edges": [{"source": "n1", "target": "n2"}],
-        "entryNode": "n1",
-    }})
+    store = _mock_store(
+        wf_data={
+            "name": "wf1",
+            "schedule": {"type": "cron", "cron": "0 9 * * 1"},
+            "graphDefinition": {
+                "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
+                "edges": [{"source": "n1", "target": "n2"}],
+                "entryNode": "n1",
+            },
+        }
+    )
     scheduler = WorkflowScheduler(store)
     scheduler.start()
     await scheduler.register("ws1", "wf1")
@@ -117,11 +141,17 @@ async def test_unregister_nonexistent():
 
 @pytest.mark.asyncio
 async def test_register_replaces_existing():
-    store = _mock_store(wf_data={"name": "wf1", "schedule": {"type": "cron", "cron": "0 9 * * 1"}, "graphDefinition": {
-        "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
-        "edges": [{"source": "n1", "target": "n2"}],
-        "entryNode": "n1",
-    }})
+    store = _mock_store(
+        wf_data={
+            "name": "wf1",
+            "schedule": {"type": "cron", "cron": "0 9 * * 1"},
+            "graphDefinition": {
+                "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
+                "edges": [{"source": "n1", "target": "n2"}],
+                "entryNode": "n1",
+            },
+        }
+    )
     scheduler = WorkflowScheduler(store)
     scheduler.start()
     await scheduler.register("ws1", "wf1")
@@ -133,11 +163,16 @@ async def test_register_replaces_existing():
 
 @pytest.mark.asyncio
 async def test_run_scheduled_workflow_error():
-    store = _mock_store(wf_data={"name": "wf1", "graphDefinition": {
-        "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
-        "edges": [{"source": "n1", "target": "n2"}],
-        "entryNode": "n1",
-    }})
+    store = _mock_store(
+        wf_data={
+            "name": "wf1",
+            "graphDefinition": {
+                "nodes": [{"id": "n1", "type": "START_NODE"}, {"id": "n2", "type": "END_NODE"}],
+                "edges": [{"source": "n1", "target": "n2"}],
+                "entryNode": "n1",
+            },
+        }
+    )
     scheduler = WorkflowScheduler(store)
     scheduler.start()
     with patch("fsb.engine.runner.WorkflowRunner") as MockRunner:

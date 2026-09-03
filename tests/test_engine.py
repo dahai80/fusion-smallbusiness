@@ -174,7 +174,11 @@ class TestGraphValidation:
         runner = WorkflowRunner(store)
         nodes = [
             WorkflowNode(id="n_start", type=NodeType.START_NODE),
-            WorkflowNode(id="n_write", type=NodeType.CONNECTOR_NODE, config=NodeConfig(action="custom_action", permission="write")),
+            WorkflowNode(
+                id="n_write",
+                type=NodeType.CONNECTOR_NODE,
+                config=NodeConfig(action="custom_action", permission="write"),
+            ),
             WorkflowNode(id="n_end", type=NodeType.END_NODE),
         ]
         edges = [
@@ -197,7 +201,9 @@ class TestGraphValidation:
         nodes = [
             WorkflowNode(id="n_start", type=NodeType.START_NODE),
             WorkflowNode(id="n_gate", type=NodeType.APPROVAL_GATE_NODE),
-            WorkflowNode(id="n_write", type=NodeType.CONNECTOR_NODE, config=NodeConfig(action="send_email", permission="write")),
+            WorkflowNode(
+                id="n_write", type=NodeType.CONNECTOR_NODE, config=NodeConfig(action="send_email", permission="write")
+            ),
             WorkflowNode(id="n_end", type=NodeType.END_NODE),
         ]
         edges = [
@@ -267,7 +273,9 @@ class TestGraphValidation:
         runner = WorkflowRunner(store)
         nodes = [
             WorkflowNode(id="n_start", type=NodeType.START_NODE),
-            WorkflowNode(id="n_read", type=NodeType.CONNECTOR_NODE, config=NodeConfig(action="get_data", permission="read")),
+            WorkflowNode(
+                id="n_read", type=NodeType.CONNECTOR_NODE, config=NodeConfig(action="get_data", permission="read")
+            ),
             WorkflowNode(id="n_end", type=NodeType.END_NODE),
         ]
         edges = [

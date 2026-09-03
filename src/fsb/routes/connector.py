@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..config import fsb_config
@@ -8,16 +8,22 @@ from ..connectors.registry import get_builtin_connectors
 from ..db.store import Store
 from ..models.common import AuthStatus, ConnectorMeta, utc_now
 from ..models.connector import Connector, ConnectorCreate, ConnectorUpdate
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workspace/{wsId}/connector", tags=["connector"])
+router = APIRouter(
+    prefix="/workspace/{wsId}/connector",
+    tags=["connector"],
+    dependencies=[Depends(ws_tenant_dep)],
+)
 
 meta_router = APIRouter(prefix="/connector-meta", tags=["connector-meta"])
 
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -142,6 +148,7 @@ async def oauth2_authorize(wsId: str, connId: str, body: OAuth2AuthorizeRequest)
         }
 
     from ..engine.gateway_client import initiate_oauth2
+
     result = await initiate_oauth2(
         connector_key=body.connectorKey,
         redirect_uri=body.redirectUri,
@@ -165,6 +172,7 @@ async def oauth2_callback(wsId: str, connId: str, code: str, state: str = ""):
         return {"success": True, "connectionId": connId, "standalone": True}
 
     from ..engine.gateway_client import handle_oauth2_callback
+
     result = await handle_oauth2_callback(code=code, state=state)
     if not result.get("success"):
         raise HTTPException(status_code=502, detail=result.get("message", "oauth2 callback failed"))

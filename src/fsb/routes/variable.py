@@ -1,18 +1,24 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..db.store import Store
 from ..models.common import Variable
 from ..models.workspace import Workspace
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workspace/{wsId}", tags=["variable"])
+router = APIRouter(
+    prefix="/workspace/{wsId}",
+    tags=["variable"],
+    dependencies=[Depends(ws_tenant_dep)],
+)
 
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -38,6 +44,7 @@ async def update_variables(wsId: str, body: list[dict]):
         var_map[var.key] = var
     ws.variables = list(var_map.values())
     from ..models.common import utc_now
+
     ws.updateTime = utc_now()
     await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
     logger.info("variables updated for ws %s: %d vars", wsId, len(ws.variables))
@@ -58,6 +65,7 @@ async def create_template(wsId: str, body: dict):
     if not ws:
         raise HTTPException(status_code=404, detail="workspace not found")
     from ..models.common import gen_id, utc_now
+
     tpl_id = gen_id("tpl")
     tpl = {
         "templateId": tpl_id,

@@ -108,17 +108,12 @@ class WorkflowRunner:
             raise ValueError(f"branches do not converge to END_NODE: {dangling}")
 
         write_nodes = [
-            n for n in graph.nodes
-            if n.type == NodeType.CONNECTOR_NODE
-            and n.config
-            and self._is_write_node(n)
+            n for n in graph.nodes if n.type == NodeType.CONNECTOR_NODE and n.config and self._is_write_node(n)
         ]
         for wn in write_nodes:
             has_gate_upstream = self._has_approval_gate_upstream(graph, wn.id)
             if not has_gate_upstream:
-                raise ValueError(
-                    f"write connector node {wn.id} must have approval gate upstream"
-                )
+                raise ValueError(f"write connector node {wn.id} must have approval gate upstream")
 
         logger.info("graph validation passed: %d nodes, %d edges", len(graph.nodes), len(graph.edges))
 
@@ -145,10 +140,7 @@ class WorkflowRunner:
                 reachable_to_end.add(cur)
                 stack.extend(reverse_adj.get(cur, []))
 
-        dangling = [
-            n.id for n in graph.nodes
-            if n.id not in reachable_to_end and n.type != NodeType.END_NODE
-        ]
+        dangling = [n.id for n in graph.nodes if n.id not in reachable_to_end and n.type != NodeType.END_NODE]
         return dangling
 
     def _has_cycle(self, graph: GraphDefinition) -> bool:
@@ -275,11 +267,13 @@ class WorkflowRunner:
 
             elif node.type == NodeType.OUTPUT_NODE:
                 output_key = node.config.outputKey or "output"
-                run.contextSandbox.artifacts.append({
-                    "key": output_key,
-                    "nodeId": node.id,
-                    "data": run.contextSandbox.inputData,
-                })
+                run.contextSandbox.artifacts.append(
+                    {
+                        "key": output_key,
+                        "nodeId": node.id,
+                        "data": run.contextSandbox.inputData,
+                    }
+                )
                 trace.status = "success"
                 trace.output = {"outputKey": output_key}
                 trace.exitTime = utc_now()
@@ -311,9 +305,7 @@ class WorkflowRunner:
                 return n
         return None
 
-    def _get_next_nodes(
-        self, graph: GraphDefinition, node_id: str, condition: str | None = None
-    ) -> list[WorkflowNode]:
+    def _get_next_nodes(self, graph: GraphDefinition, node_id: str, condition: str | None = None) -> list[WorkflowNode]:
         edges = graph.edges
         next_ids = []
         for e in edges:
@@ -356,6 +348,7 @@ class WorkflowRunner:
     async def _create_artifact_for_output(self, run: RunInstance, node: WorkflowNode, output_key: str):
         try:
             from .artifact_client import create_external_artifact
+
             extra = node.config.extra if node.config else {}
             await create_external_artifact(
                 source_module="fsb",
@@ -373,6 +366,7 @@ class WorkflowRunner:
     async def _archive_output_to_rag(self, run: RunInstance, node: WorkflowNode, output_key: str):
         try:
             from .rag_client import upload_document
+
             extra = node.config.extra if node.config else {}
             kb_id = extra.get("knowledgeBaseId", "")
             if not kb_id:
@@ -381,6 +375,7 @@ class WorkflowRunner:
             import json
             import os
             import tempfile
+
             content = json.dumps(run.contextSandbox.inputData, ensure_ascii=False, indent=2)
             tmp_dir = tempfile.mkdtemp(prefix="fsb_rag_")
             tmp_path = os.path.join(tmp_dir, f"{output_key}_{run.runId[:8]}.json")
@@ -397,6 +392,7 @@ class WorkflowRunner:
     async def _push_approval_notification(self, run: RunInstance, task: PendingTask):
         try:
             from .cowork_client import push_notification
+
             await push_notification(
                 space_id=run.workspaceId,
                 user_id="admin",
@@ -415,9 +411,8 @@ class WorkflowRunner:
 
         try:
             from .gateway_client import execute_action
-            conn_data = await self.store.get_connector(
-                f"{run.workspaceId}_{connector_id}"
-            )
+
+            conn_data = await self.store.get_connector(f"{run.workspaceId}_{connector_id}")
             connection_id = ""
             if conn_data:
                 connection_id = conn_data.get("data", {}).get("connectionId", "")
@@ -436,7 +431,9 @@ class WorkflowRunner:
                     "status": "success",
                     "data": result,
                 }
-            logger.warning("connector gateway call failed, fallback to stub: %s error=%s", connector_id, result.get("message"))
+            logger.warning(
+                "connector gateway call failed, fallback to stub: %s error=%s", connector_id, result.get("message")
+            )
         except Exception as e:
             logger.warning("connector gateway error, fallback to stub: %s error=%s", connector_id, e)
 
@@ -461,6 +458,7 @@ class WorkflowRunner:
         if skill_type == "prompt" and skill_definition:
             try:
                 from .llm_client import execute_skill_prompt
+
                 result = await execute_skill_prompt(
                     skill_definition=skill_definition,
                     input_data=run.contextSandbox.inputData,
@@ -475,7 +473,9 @@ class WorkflowRunner:
                         "status": "success",
                         "data": result,
                     }
-                logger.warning("skill LLM call failed, fallback to stub: %s error=%s", skill_name, result.get("message"))
+                logger.warning(
+                    "skill LLM call failed, fallback to stub: %s error=%s", skill_name, result.get("message")
+                )
             except Exception as e:
                 logger.warning("skill LLM call error, fallback to stub: %s error=%s", skill_name, e)
 
@@ -499,6 +499,7 @@ class WorkflowRunner:
             if not hooks:
                 return
             from .webhook_dispatcher import dispatch_webhook
+
             for hook in hooks:
                 await dispatch_webhook(hook, event, run.model_dump(mode="json"))
         except Exception as e:

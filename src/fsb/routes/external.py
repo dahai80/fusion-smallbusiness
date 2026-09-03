@@ -13,6 +13,7 @@ router = APIRouter(prefix="/external", tags=["external"])
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -24,11 +25,10 @@ async def external_trigger(wfId: str, body: dict | None = None):
         raise HTTPException(status_code=404, detail="workflow not found")
     ws_id = data["workspaceId"]
     from ..engine.runner import WorkflowRunner
+
     runner = WorkflowRunner(store)
     input_data = (body or {}).get("inputData", {})
-    run = await runner.start(
-        ws_id, wfId, input_data=input_data, triggered_by="external_api"
-    )
+    run = await runner.start(ws_id, wfId, input_data=input_data, triggered_by="external_api")
     logger.info("external trigger: wf %s run %s", wfId, run.runId)
     return run.model_dump(mode="json")
 
@@ -60,6 +60,7 @@ async def post_event(body: dict):
     if not event.eventType:
         raise HTTPException(status_code=400, detail="eventType is required")
     from ..engine.event_bus import EventBus
+
     bus = EventBus(store)
     triggered = await bus.publish(event)
     logger.info("event received: %s triggered %d workflows", event.eventId, len(triggered))

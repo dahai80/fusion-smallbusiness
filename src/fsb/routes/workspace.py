@@ -1,17 +1,21 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..db.store import Store
 from ..models.workspace import Workspace, WorkspaceCreate, WorkspaceUpdate
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
+_TENANT_BIND = [Depends(ws_tenant_dep)]
+
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -31,7 +35,7 @@ async def list_workspaces(offset: int = 0, limit: int = 100, search: str = "", p
     return [Workspace(**d) for d in items]
 
 
-@router.get("/{wsId}", response_model=Workspace)
+@router.get("/{wsId}", response_model=Workspace, dependencies=_TENANT_BIND)
 async def get_workspace(wsId: str):
     store = get_store()
     data = await store.get_workspace(wsId)
@@ -40,7 +44,7 @@ async def get_workspace(wsId: str):
     return Workspace(**data)
 
 
-@router.put("/{wsId}", response_model=Workspace)
+@router.put("/{wsId}", response_model=Workspace, dependencies=_TENANT_BIND)
 async def update_workspace(wsId: str, body: WorkspaceUpdate):
     store = get_store()
     data = await store.get_workspace(wsId)
@@ -51,13 +55,14 @@ async def update_workspace(wsId: str, body: WorkspaceUpdate):
     for k, v in update.items():
         setattr(ws, k, v)
     from ..models.common import utc_now
+
     ws.updateTime = utc_now()
     await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
     logger.info("workspace updated: %s", wsId)
     return ws
 
 
-@router.post("/{wsId}/duplicate", response_model=Workspace)
+@router.post("/{wsId}/duplicate", response_model=Workspace, dependencies=_TENANT_BIND)
 async def duplicate_workspace(wsId: str):
     store = get_store()
     data = await store.get_workspace(wsId)
@@ -76,7 +81,7 @@ async def duplicate_workspace(wsId: str):
     return new_ws
 
 
-@router.post("/{wsId}/export")
+@router.post("/{wsId}/export", dependencies=_TENANT_BIND)
 async def export_workspace(wsId: str):
     store = get_store()
     data = await store.get_workspace(wsId)
@@ -103,16 +108,19 @@ async def import_workspace(body: dict):
         await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
         for c in body.get("connectors", []):
             from ..models.connector import Connector
+
             conn = Connector(**c)
             conn.workspaceId = ws.wsId
             await store.save_connector(conn.connId, ws.wsId, conn.model_dump(mode="json"))
         for s in body.get("skills", []):
             from ..models.skill import Skill
+
             sk = Skill(**s)
             sk.workspaceId = ws.wsId
             await store.save_skill(sk.skillId, ws.wsId, sk.model_dump(mode="json"))
         for w in body.get("workflows", []):
             from ..models.workflow import Workflow
+
             wf = Workflow(**w)
             wf.workspaceId = ws.wsId
             await store.save_workflow(wf.wfId, ws.wsId, wf.model_dump(mode="json"))
@@ -132,7 +140,7 @@ async def import_workspace(body: dict):
     return ws
 
 
-@router.delete("/{wsId}")
+@router.delete("/{wsId}", dependencies=_TENANT_BIND)
 async def delete_workspace(wsId: str):
     store = get_store()
     data = await store.get_workspace(wsId)

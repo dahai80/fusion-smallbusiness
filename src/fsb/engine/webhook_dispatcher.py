@@ -33,7 +33,9 @@ async def dispatch_webhook(webhook: dict, event: str, payload: dict):
             resp = await client.post(url, json=body, headers=headers)
             logger.info(
                 "webhook dispatched: %s -> %s status=%d",
-                webhook.get("webhookId"), url, resp.status_code,
+                webhook.get("webhookId"),
+                url,
+                resp.status_code,
             )
             return resp.status_code < 300
     except Exception as e:

@@ -124,8 +124,9 @@ async def upload_document(
             resp = await client.post(url, json=payload, headers=_api_headers())
             resp.raise_for_status()
             result = resp.json()
-            logger.info("rag document uploaded: kb=%s doc=%s chunks=%d",
-                        kb_id, result.get("doc_id"), result.get("chunks", 0))
+            logger.info(
+                "rag document uploaded: kb=%s doc=%s chunks=%d", kb_id, result.get("doc_id"), result.get("chunks", 0)
+            )
             return {"success": True, "data": result}
     except httpx.HTTPError as e:
         logger.error("rag upload document failed: kb=%s file=%s error=%s", kb_id, file_path, e)
@@ -256,8 +257,7 @@ async def ask(
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             result = resp.json()
-            logger.info("rag ask: kb=%s question=%s sources=%d",
-                        kb_id, question[:50], len(result.get("sources", [])))
+            logger.info("rag ask: kb=%s question=%s sources=%d", kb_id, question[:50], len(result.get("sources", [])))
             return {"success": True, "data": result}
     except httpx.HTTPError as e:
         logger.error("rag ask failed: kb=%s question=%s error=%s", kb_id, question[:50], e)

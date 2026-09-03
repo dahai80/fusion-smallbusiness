@@ -1,19 +1,25 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from ..config import fsb_config
 from ..db.store import Store
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workspace/{wsId}", tags=["integration"])
+router = APIRouter(
+    prefix="/workspace/{wsId}",
+    tags=["integration"],
+    dependencies=[Depends(ws_tenant_dep)],
+)
 
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -57,14 +63,19 @@ async def send_to_canvas(wsId: str, wfId: str, body: SendToCanvasRequest = None)
         }
 
     from ..engine.artifact_client import export_session
+
     result = await export_session(session_id=session_id, output_dir=output_dir)
     if not result.get("success"):
-        logger.warning("send-to-canvas export failed: wf=%s session=%s err=%s",
-                       wfId, session_id, result.get("message"))
+        logger.warning("send-to-canvas export failed: wf=%s session=%s err=%s", wfId, session_id, result.get("message"))
         return {"success": False, "message": f"export failed: {result.get('message', 'unknown')}"}
 
-    logger.info("send-to-canvas: wf=%s session=%s count=%d path=%s",
-                wfId, session_id, result["data"].get("count", 0), result["data"].get("path", ""))
+    logger.info(
+        "send-to-canvas: wf=%s session=%s count=%d path=%s",
+        wfId,
+        session_id,
+        result["data"].get("count", 0),
+        result["data"].get("path", ""),
+    )
     return {
         "success": True,
         "sessionId": session_id,
@@ -113,8 +124,7 @@ async def sync_to_project(wsId: str, body: SyncToProjectRequest):
             failed += 1
             logger.warning("sync-to-project: artifact=%s move failed: %s", aid, result.get("message"))
 
-    logger.info("sync-to-project: ws=%s project=%s synced=%d failed=%d",
-                wsId, body.projectId, synced, failed)
+    logger.info("sync-to-project: ws=%s project=%s synced=%d failed=%d", wsId, body.projectId, synced, failed)
     return {
         "success": True,
         "synced": synced,
@@ -143,6 +153,7 @@ async def create_artifact(wsId: str, body: CreateArtifactRequest):
         }
 
     from ..engine.artifact_client import create_external_artifact
+
     result = await create_external_artifact(
         source_module="fsb",
         workspace_id=wsId,
@@ -180,6 +191,7 @@ async def sync_knowledge(wsId: str, body: SyncKnowledgeRequest):
         }
 
     from ..engine.cowork_client import sync_knowledge as cowork_sync_knowledge
+
     result = await cowork_sync_knowledge(space_id=body.spaceId, files=body.files)
     if result.get("status") == "error":
         raise HTTPException(status_code=502, detail=result.get("message", "sync knowledge failed"))
@@ -207,6 +219,7 @@ async def import_snapshot(wsId: str, body: ImportSnapshotRequest):
         }
 
     from ..engine.cowork_client import import_snapshot as cowork_import_snapshot
+
     result = await cowork_import_snapshot(space_id=body.spaceId, snapshot=body.snapshot)
     if result.get("status") == "error":
         raise HTTPException(status_code=502, detail=result.get("message", "import snapshot failed"))
@@ -227,8 +240,9 @@ async def export_to_project(wsId: str, body: ExportToProjectRequest):
         raise HTTPException(status_code=404, detail="workspace not found")
 
     if fsb_config.STANDALONE_MODE:
-        logger.info("export-to-project (standalone): ws=%s space=%s project=%s",
-                     wsId, body.spaceId, body.targetProjectId)
+        logger.info(
+            "export-to-project (standalone): ws=%s space=%s project=%s", wsId, body.spaceId, body.targetProjectId
+        )
         return {
             "success": True,
             "spaceId": body.spaceId,
@@ -237,6 +251,7 @@ async def export_to_project(wsId: str, body: ExportToProjectRequest):
         }
 
     from ..engine.cowork_client import export_to_project as cowork_export_to_project
+
     result = await cowork_export_to_project(
         space_id=body.spaceId,
         items=body.items,

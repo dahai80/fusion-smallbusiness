@@ -61,10 +61,12 @@ class IntentRouter:
         for d in items:
             wf = Workflow(**d)
             if wf.slashCommand and wf.enabled:
-                result.append({
-                    "slashCommand": wf.slashCommand,
-                    "wfId": wf.wfId,
-                    "name": wf.name,
-                    "displayName": wf.displayName,
-                })
+                result.append(
+                    {
+                        "slashCommand": wf.slashCommand,
+                        "wfId": wf.wfId,
+                        "name": wf.name,
+                        "displayName": wf.displayName,
+                    }
+                )
         return result

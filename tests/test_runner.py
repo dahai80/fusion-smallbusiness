@@ -25,7 +25,11 @@ def _graph_with_all_types():
     return {
         "nodes": [
             {"id": "n_start", "type": "START_NODE"},
-            {"id": "n_conn", "type": "CONNECTOR_NODE", "config": {"connectorId": "qbo", "action": "query", "permission": "read"}},
+            {
+                "id": "n_conn",
+                "type": "CONNECTOR_NODE",
+                "config": {"connectorId": "qbo", "action": "query", "permission": "read"},
+            },
             {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "test-skill", "extra": {}}},
             {"id": "n_cond", "type": "CONDITION_NODE", "config": {"conditionExpr": "amount>100"}},
             {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "result", "extra": {}}},
@@ -46,9 +50,17 @@ def _graph_with_approval():
     return {
         "nodes": [
             {"id": "n_start", "type": "START_NODE"},
-            {"id": "n_conn", "type": "CONNECTOR_NODE", "config": {"connectorId": "qbo", "action": "query", "permission": "read"}},
+            {
+                "id": "n_conn",
+                "type": "CONNECTOR_NODE",
+                "config": {"connectorId": "qbo", "action": "query", "permission": "read"},
+            },
             {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "confirm"}},
-            {"id": "n_send", "type": "CONNECTOR_NODE", "config": {"connectorId": "gmail", "action": "send_email", "permission": "write"}},
+            {
+                "id": "n_send",
+                "type": "CONNECTOR_NODE",
+                "config": {"connectorId": "gmail", "action": "send_email", "permission": "write"},
+            },
             {"id": "n_end", "type": "END_NODE"},
         ],
         "edges": [
@@ -105,13 +117,19 @@ class TestWorkflowRunnerStart:
     async def test_start_graph_with_all_node_types(self):
         wf_data = _wf_from_graph(_graph_with_all_types())
         ws_data = {"wsId": "ws1", "variables": []}
-        store = _mock_store(wf_data=wf_data, ws_data=ws_data, skill_data={"skillId": "test-skill", "name": "test", "type": "prompt", "definition": ""})
+        store = _mock_store(
+            wf_data=wf_data,
+            ws_data=ws_data,
+            skill_data={"skillId": "test-skill", "name": "test", "type": "prompt", "definition": ""},
+        )
         runner = WorkflowRunner(store)
 
-        with patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec, \
-             patch("fsb.engine.llm_client.execute_skill_prompt", new_callable=AsyncMock) as mock_skill, \
-             patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact, \
-             patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload:
+        with (
+            patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec,
+            patch("fsb.engine.llm_client.execute_skill_prompt", new_callable=AsyncMock) as mock_skill,
+            patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact,
+            patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload,
+        ):
             mock_exec.return_value = {"success": True, "data": {"items": []}}
             mock_skill.return_value = {"status": "success", "data": {"text": "ok"}}
             mock_artifact.return_value = {"success": True}
@@ -160,10 +178,14 @@ class TestWorkflowRunnerResume:
     @pytest.mark.asyncio
     async def test_resume_not_paused(self):
         run_obj = RunInstance(
-            runId="r1", workspaceId="ws1", workflowId="wf1",
-            status=RunStatus.COMPLETED, triggerType=TriggerType.MANUAL,
+            runId="r1",
+            workspaceId="ws1",
+            workflowId="wf1",
+            status=RunStatus.COMPLETED,
+            triggerType=TriggerType.MANUAL,
             contextSandbox={"inputData": {}, "variables": {}, "artifacts": [], "snapshots": {}},
-            nodeTrace=[], approvalRecord=[],
+            nodeTrace=[],
+            approvalRecord=[],
         )
         wf_data = _wf_from_graph(_simple_graph())
         store = _mock_store(wf_data=wf_data)
@@ -175,11 +197,15 @@ class TestWorkflowRunnerResume:
     @pytest.mark.asyncio
     async def test_resume_workflow_not_found(self):
         run_obj = RunInstance(
-            runId="r1", workspaceId="ws1", workflowId="wf1",
-            status=RunStatus.PAUSED, triggerType=TriggerType.MANUAL,
+            runId="r1",
+            workspaceId="ws1",
+            workflowId="wf1",
+            status=RunStatus.PAUSED,
+            triggerType=TriggerType.MANUAL,
             currentNodeId="n_approval",
             contextSandbox={"inputData": {}, "variables": {}, "artifacts": [], "snapshots": {}},
-            nodeTrace=[], approvalRecord=[],
+            nodeTrace=[],
+            approvalRecord=[],
         )
         store = _mock_store(wf_data=None)
         store.get_run.return_value = run_obj.model_dump(mode="json")
@@ -191,18 +217,24 @@ class TestWorkflowRunnerResume:
 class TestWorkflowRunnerConnectorExecution:
     @pytest.mark.asyncio
     async def test_connector_gateway_success(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_conn", "type": "CONNECTOR_NODE", "config": {"connectorId": "qbo", "action": "query", "permission": "read"}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_conn"},
-                {"source": "n_conn", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {
+                        "id": "n_conn",
+                        "type": "CONNECTOR_NODE",
+                        "config": {"connectorId": "qbo", "action": "query", "permission": "read"},
+                    },
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_conn"},
+                    {"source": "n_conn", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data, connector_data={"data": {"connectionId": "conn1"}})
         runner = WorkflowRunner(store)
@@ -216,18 +248,24 @@ class TestWorkflowRunnerConnectorExecution:
 
     @pytest.mark.asyncio
     async def test_connector_gateway_failure_fallback_stub(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_conn", "type": "CONNECTOR_NODE", "config": {"connectorId": "qbo", "action": "query", "permission": "read"}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_conn"},
-                {"source": "n_conn", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {
+                        "id": "n_conn",
+                        "type": "CONNECTOR_NODE",
+                        "config": {"connectorId": "qbo", "action": "query", "permission": "read"},
+                    },
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_conn"},
+                    {"source": "n_conn", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
@@ -240,18 +278,24 @@ class TestWorkflowRunnerConnectorExecution:
 
     @pytest.mark.asyncio
     async def test_connector_gateway_exception_fallback_stub(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_conn", "type": "CONNECTOR_NODE", "config": {"connectorId": "qbo", "action": "query", "permission": "read"}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_conn"},
-                {"source": "n_conn", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {
+                        "id": "n_conn",
+                        "type": "CONNECTOR_NODE",
+                        "config": {"connectorId": "qbo", "action": "query", "permission": "read"},
+                    },
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_conn"},
+                    {"source": "n_conn", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
@@ -266,18 +310,20 @@ class TestWorkflowRunnerConnectorExecution:
 class TestWorkflowRunnerSkillExecution:
     @pytest.mark.asyncio
     async def test_skill_llm_success(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {"model": "qwen3"}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_skill"},
-                {"source": "n_skill", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {"model": "qwen3"}}},
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_skill"},
+                    {"source": "n_skill", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         skill_data = {"skillId": "s1", "name": "test-skill", "type": "prompt", "definition": "summarize this"}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data, skill_data=skill_data)
@@ -291,18 +337,20 @@ class TestWorkflowRunnerSkillExecution:
 
     @pytest.mark.asyncio
     async def test_skill_llm_failure_fallback_stub(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_skill"},
-                {"source": "n_skill", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {}}},
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_skill"},
+                    {"source": "n_skill", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         skill_data = {"skillId": "s1", "name": "test-skill", "type": "prompt", "definition": "summarize"}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data, skill_data=skill_data)
@@ -316,18 +364,20 @@ class TestWorkflowRunnerSkillExecution:
 
     @pytest.mark.asyncio
     async def test_skill_no_definition_fallback_stub(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_skill"},
-                {"source": "n_skill", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {}}},
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_skill"},
+                    {"source": "n_skill", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         skill_data = {"skillId": "s1", "name": "test-skill", "type": "prompt", "definition": ""}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data, skill_data=skill_data)
@@ -338,18 +388,20 @@ class TestWorkflowRunnerSkillExecution:
 
     @pytest.mark.asyncio
     async def test_skill_not_found_fallback_stub(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_skill"},
-                {"source": "n_skill", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {"id": "n_skill", "type": "SKILL_NODE", "config": {"skillId": "s1", "extra": {}}},
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_skill"},
+                    {"source": "n_skill", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data, skill_data=None)
         runner = WorkflowRunner(store)
@@ -366,8 +418,10 @@ class TestWorkflowRunnerApproval:
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
 
-        with patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec, \
-             patch("fsb.engine.cowork_client.push_notification", new_callable=AsyncMock):
+        with (
+            patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec,
+            patch("fsb.engine.cowork_client.push_notification", new_callable=AsyncMock),
+        ):
             mock_exec.return_value = {"success": True, "data": {}}
             run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
         assert run.status == RunStatus.PAUSED
@@ -379,8 +433,10 @@ class TestWorkflowRunnerApproval:
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
 
-        with patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec, \
-             patch("fsb.engine.cowork_client.push_notification", new_callable=AsyncMock) as mock_push:
+        with (
+            patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec,
+            patch("fsb.engine.cowork_client.push_notification", new_callable=AsyncMock) as mock_push,
+        ):
             mock_exec.return_value = {"success": True, "data": {}}
             mock_push.side_effect = RuntimeError("cowork down")
             run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
@@ -390,24 +446,35 @@ class TestWorkflowRunnerApproval:
 class TestWorkflowRunnerOutputNode:
     @pytest.mark.asyncio
     async def test_output_node_creates_artifact_and_rag(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "report", "extra": {"artifactName": "sales_report", "artifactType": "text", "knowledgeBaseId": "kb1"}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_output"},
-                {"source": "n_output", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {
+                        "id": "n_output",
+                        "type": "OUTPUT_NODE",
+                        "config": {
+                            "outputKey": "report",
+                            "extra": {"artifactName": "sales_report", "artifactType": "text", "knowledgeBaseId": "kb1"},
+                        },
+                    },
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_output"},
+                    {"source": "n_output", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
 
-        with patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact, \
-             patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload:
+        with (
+            patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact,
+            patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload,
+        ):
             mock_artifact.return_value = {"success": True}
             mock_upload.return_value = {"success": True, "data": {"doc_id": "d1"}}
             run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
@@ -417,48 +484,56 @@ class TestWorkflowRunnerOutputNode:
 
     @pytest.mark.asyncio
     async def test_output_node_no_kbid_skips_rag(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "report", "extra": {}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_output"},
-                {"source": "n_output", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "report", "extra": {}}},
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_output"},
+                    {"source": "n_output", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
 
-        with patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact, \
-             patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload:
+        with (
+            patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact,
+            patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock) as mock_upload,
+        ):
             mock_artifact.return_value = {"success": True}
             await runner.start("ws1", wf_data.get("wfId", "wf1"))
         mock_upload.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_output_node_artifact_failure_continues(self):
-        wf_data = _wf_from_graph({
-            "nodes": [
-                {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "report", "extra": {}}},
-                {"id": "n_end", "type": "END_NODE"},
-            ],
-            "edges": [
-                {"source": "n_start", "target": "n_output"},
-                {"source": "n_output", "target": "n_end"},
-            ],
-            "entryNode": "n_start",
-        })
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "report", "extra": {}}},
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_output"},
+                    {"source": "n_output", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
         ws_data = {"wsId": "ws1", "variables": []}
         store = _mock_store(wf_data=wf_data, ws_data=ws_data)
         runner = WorkflowRunner(store)
 
-        with patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact, \
-             patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock):
+        with (
+            patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_artifact,
+            patch("fsb.engine.rag_client.upload_document", new_callable=AsyncMock),
+        ):
             mock_artifact.side_effect = RuntimeError("artifact svc down")
             run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
         assert run.status == RunStatus.COMPLETED
