@@ -42,7 +42,9 @@ async def create_external_artifact(
             result = resp.json()
             logger.info(
                 "artifact created: id=%s name=%s source=%s",
-                result.get("artifact_id"), name, source_module,
+                result.get("artifact_id"),
+                name,
+                source_module,
             )
             return result
     except httpx.HTTPError as e:
@@ -70,8 +72,9 @@ async def export_session(session_id: str, output_dir: str) -> dict[str, Any]:
                 logger.error("export session rpc error: session=%s err=%s", session_id, result["error"])
                 return {"success": False, "message": result["error"].get("message", "rpc error")}
             data = result.get("result", {})
-            logger.info("export session: session=%s count=%d path=%s",
-                        session_id, data.get("count", 0), data.get("path", ""))
+            logger.info(
+                "export session: session=%s count=%d path=%s", session_id, data.get("count", 0), data.get("path", "")
+            )
             return {"success": True, "data": data}
     except httpx.HTTPError as e:
         logger.error("export session failed: session=%s error=%s", session_id, e)
@@ -111,8 +114,9 @@ async def list_artifacts_by_source(source_module: str, workspace_id: str = "") -
             resp.raise_for_status()
             result = resp.json()
             artifacts = result.get("artifacts", [])
-            logger.info("list artifacts by source: module=%s ws=%s count=%d",
-                        source_module, workspace_id, len(artifacts))
+            logger.info(
+                "list artifacts by source: module=%s ws=%s count=%d", source_module, workspace_id, len(artifacts)
+            )
             return {"success": True, "data": artifacts}
     except httpx.HTTPError as e:
         logger.error("list artifacts by source failed: module=%s error=%s", source_module, e)

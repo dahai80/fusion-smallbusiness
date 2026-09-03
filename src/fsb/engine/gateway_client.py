@@ -44,8 +44,13 @@ async def execute_action(
             if result.get("success"):
                 logger.info("gateway action ok: %s/%s", connector_key, action_key)
             else:
-                logger.warning("gateway action failed: %s/%s code=%s msg=%s",
-                               connector_key, action_key, result.get("code"), result.get("message"))
+                logger.warning(
+                    "gateway action failed: %s/%s code=%s msg=%s",
+                    connector_key,
+                    action_key,
+                    result.get("code"),
+                    result.get("message"),
+                )
             return result
     except httpx.HTTPError as e:
         logger.error("gateway action failed: %s/%s error=%s", connector_key, action_key, e)

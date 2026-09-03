@@ -91,19 +91,13 @@ async def test_connector_crud(client, ws):
     )
     assert resp.status_code == 200
 
-    resp = await client.post(
-        f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/refresh"
-    )
+    resp = await client.post(f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/refresh")
     assert resp.status_code == 200
 
-    resp = await client.post(
-        f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/disconnect"
-    )
+    resp = await client.post(f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}/disconnect")
     assert resp.status_code == 200
 
-    resp = await client.delete(
-        f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}"
-    )
+    resp = await client.delete(f"/api/v1/fsb/workspace/{ws}/connector/{conn_id}")
     assert resp.status_code == 200
     assert resp.json()["success"] is True
 
@@ -286,8 +280,10 @@ async def test_send_to_canvas_live(client, ws):
     assert wf_resp.status_code == 200
     wf_id = wf_resp.json()["wfId"]
 
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.export_session", new_callable=AsyncMock) as mock_export:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.export_session", new_callable=AsyncMock) as mock_export,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_export.return_value = {"success": True, "data": {"count": 2, "path": "/tmp/exports/s1"}}
         resp = await client.post(
@@ -314,14 +310,19 @@ async def test_sync_to_project_standalone(client, ws):
 
 @pytest.mark.asyncio
 async def test_sync_to_project_live(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list, \
-         patch("fsb.engine.artifact_client.move_artifact_to_kb", new_callable=AsyncMock) as mock_move:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list,
+        patch("fsb.engine.artifact_client.move_artifact_to_kb", new_callable=AsyncMock) as mock_move,
+    ):
         mock_cfg.STANDALONE_MODE = False
-        mock_list.return_value = {"success": True, "data": [
-            {"id": "art_1", "name": "report"},
-            {"id": "art_2", "name": "invoice"},
-        ]}
+        mock_list.return_value = {
+            "success": True,
+            "data": [
+                {"id": "art_1", "name": "report"},
+                {"id": "art_2", "name": "invoice"},
+            ],
+        }
         mock_move.return_value = {"success": True, "data": {"ok": True}}
         resp = await client.post(
             f"/api/v1/fsb/workspace/{ws}/sync-to-project",
@@ -365,8 +366,10 @@ async def test_oauth2_authorize_live(client, ws):
     assert conn_resp.status_code == 200
     conn_id = conn_resp.json()["connId"]
 
-    with patch("fsb.routes.connector.fsb_config") as mock_cfg, \
-         patch("fsb.engine.gateway_client.initiate_oauth2", new_callable=AsyncMock) as mock_oauth:
+    with (
+        patch("fsb.routes.connector.fsb_config") as mock_cfg,
+        patch("fsb.engine.gateway_client.initiate_oauth2", new_callable=AsyncMock) as mock_oauth,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_oauth.return_value = {
             "success": True,
@@ -410,8 +413,10 @@ async def test_oauth2_callback_live(client, ws):
     assert conn_resp.status_code == 200
     conn_id = conn_resp.json()["connId"]
 
-    with patch("fsb.routes.connector.fsb_config") as mock_cfg, \
-         patch("fsb.engine.gateway_client.handle_oauth2_callback", new_callable=AsyncMock) as mock_cb:
+    with (
+        patch("fsb.routes.connector.fsb_config") as mock_cfg,
+        patch("fsb.engine.gateway_client.handle_oauth2_callback", new_callable=AsyncMock) as mock_cb,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_cb.return_value = {"success": True, "connectionId": "conn_live_123"}
         resp = await client.get(
@@ -439,8 +444,10 @@ async def test_sync_knowledge_standalone(client, ws):
 
 @pytest.mark.asyncio
 async def test_sync_knowledge_live(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.cowork_client.sync_knowledge", new_callable=AsyncMock) as mock_sync:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.cowork_client.sync_knowledge", new_callable=AsyncMock) as mock_sync,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_sync.return_value = {"status": "success", "data": {"syncedCount": 1}}
         resp = await client.post(
@@ -466,8 +473,10 @@ async def test_import_snapshot_standalone(client, ws):
 
 @pytest.mark.asyncio
 async def test_import_snapshot_live(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.cowork_client.import_snapshot", new_callable=AsyncMock) as mock_imp:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.cowork_client.import_snapshot", new_callable=AsyncMock) as mock_imp,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_imp.return_value = {"status": "success", "data": {"importedCount": 1}}
         resp = await client.post(
@@ -493,8 +502,10 @@ async def test_export_to_project_standalone(client, ws):
 
 @pytest.mark.asyncio
 async def test_export_to_project_live(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.cowork_client.export_to_project", new_callable=AsyncMock) as mock_exp:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.cowork_client.export_to_project", new_callable=AsyncMock) as mock_exp,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_exp.return_value = {"status": "success", "data": {"exportedItems": ["file1", "chat1"]}}
         resp = await client.post(

@@ -20,14 +20,30 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Intuit QuickBooks Online accounting",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="list_invoices", displayName="List Invoices", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="get_invoice", displayName="Get Invoice", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="send_invoice", displayName="Send Invoice", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="list_customers", displayName="List Customers", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="get_cash_flow", displayName="Get Cash Flow", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="list_bills", displayName="List Bills", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="list_transactions", displayName="List Transactions", permission=ConnectorPermission.READ),
+                ConnectorActionMeta(
+                    actionKey="list_invoices", displayName="List Invoices", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_invoice", displayName="Get Invoice", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_invoice", displayName="Send Invoice", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_customers", displayName="List Customers", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_cash_flow", displayName="Get Cash Flow", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_bills", displayName="List Bills", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_transactions", displayName="List Transactions", permission=ConnectorPermission.READ
+                ),
             ],
         ),
         ConnectorMeta(
@@ -38,11 +54,21 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Xero cloud accounting",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="list_invoices", displayName="List Invoices", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="send_invoice", displayName="Send Invoice", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="list_contacts", displayName="List Contacts", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="get_bank_summary", displayName="Get Bank Summary", permission=ConnectorPermission.READ),
+                ConnectorActionMeta(
+                    actionKey="list_invoices", displayName="List Invoices", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_invoice", displayName="Send Invoice", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_contacts", displayName="List Contacts", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_bank_summary", displayName="Get Bank Summary", permission=ConnectorPermission.READ
+                ),
             ],
         ),
         ConnectorMeta(
@@ -53,14 +79,30 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="HubSpot CRM & marketing",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="list_contacts", displayName="List Contacts", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="get_contact", displayName="Get Contact", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="create_contact", displayName="Create Contact", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="update_contact", displayName="Update Contact", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="list_deals", displayName="List Deals", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="create_deal", displayName="Create Deal", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="list_companies", displayName="List Companies", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="send_email", displayName="Send Email", permission=ConnectorPermission.WRITE),
+                ConnectorActionMeta(
+                    actionKey="list_contacts", displayName="List Contacts", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_contact", displayName="Get Contact", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="create_contact", displayName="Create Contact", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="update_contact", displayName="Update Contact", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_deals", displayName="List Deals", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="create_deal", displayName="Create Deal", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_companies", displayName="List Companies", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_email", displayName="Send Email", permission=ConnectorPermission.WRITE
+                ),
             ],
         ),
         ConnectorMeta(
@@ -71,13 +113,29 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Salesforce CRM",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="list_leads", displayName="List Leads", permission=ConnectorPermission.READ),
+                ConnectorActionMeta(
+                    actionKey="list_leads", displayName="List Leads", permission=ConnectorPermission.READ
+                ),
                 ConnectorActionMeta(actionKey="get_lead", displayName="Get Lead", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="update_lead", displayName="Update Lead", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="list_opportunities", displayName="List Opportunities", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="create_opportunity", displayName="Create Opportunity", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="list_accounts", displayName="List Accounts", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="send_email", displayName="Send Email", permission=ConnectorPermission.WRITE),
+                ConnectorActionMeta(
+                    actionKey="update_lead", displayName="Update Lead", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_opportunities",
+                    displayName="List Opportunities",
+                    permission=ConnectorPermission.READ,
+                ),
+                ConnectorActionMeta(
+                    actionKey="create_opportunity",
+                    displayName="Create Opportunity",
+                    permission=ConnectorPermission.WRITE,
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_accounts", displayName="List Accounts", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_email", displayName="Send Email", permission=ConnectorPermission.WRITE
+                ),
             ],
         ),
         ConnectorMeta(
@@ -88,10 +146,18 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Slack messaging & channels",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="list_channels", displayName="List Channels", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="read_messages", displayName="Read Messages", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="send_message", displayName="Send Message", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="search_messages", displayName="Search Messages", permission=ConnectorPermission.READ),
+                ConnectorActionMeta(
+                    actionKey="list_channels", displayName="List Channels", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="read_messages", displayName="Read Messages", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_message", displayName="Send Message", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="search_messages", displayName="Search Messages", permission=ConnectorPermission.READ
+                ),
             ],
         ),
         ConnectorMeta(
@@ -102,10 +168,18 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Google Gmail",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="list_emails", displayName="List Emails", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="get_email", displayName="Get Email", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="send_email", displayName="Send Email", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="draft_email", displayName="Draft Email", permission=ConnectorPermission.WRITE),
+                ConnectorActionMeta(
+                    actionKey="list_emails", displayName="List Emails", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_email", displayName="Get Email", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_email", displayName="Send Email", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="draft_email", displayName="Draft Email", permission=ConnectorPermission.WRITE
+                ),
             ],
         ),
         ConnectorMeta(
@@ -116,10 +190,18 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Google Sheets spreadsheets",
             readOnlyRecommend=False,
             actions=[
-                ConnectorActionMeta(actionKey="read_sheet", displayName="Read Sheet", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="read_range", displayName="Read Range", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="write_range", displayName="Write Range", permission=ConnectorPermission.WRITE),
-                ConnectorActionMeta(actionKey="append_rows", displayName="Append Rows", permission=ConnectorPermission.WRITE),
+                ConnectorActionMeta(
+                    actionKey="read_sheet", displayName="Read Sheet", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="read_range", displayName="Read Range", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="write_range", displayName="Write Range", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="append_rows", displayName="Append Rows", permission=ConnectorPermission.WRITE
+                ),
             ],
         ),
         ConnectorMeta(
@@ -130,11 +212,21 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             description="Stripe payments",
             readOnlyRecommend=True,
             actions=[
-                ConnectorActionMeta(actionKey="list_charges", displayName="List Charges", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="list_invoices", displayName="List Invoices", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="get_balance", displayName="Get Balance", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="list_customers", displayName="List Customers", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE),
+                ConnectorActionMeta(
+                    actionKey="list_charges", displayName="List Charges", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_invoices", displayName="List Invoices", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_balance", displayName="Get Balance", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="list_customers", displayName="List Customers", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE
+                ),
             ],
         ),
         ConnectorMeta(
@@ -146,9 +238,13 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
             readOnlyRecommend=True,
             actions=[
                 ConnectorActionMeta(actionKey="read_csv", displayName="Read CSV", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="read_excel", displayName="Read Excel", permission=ConnectorPermission.READ),
+                ConnectorActionMeta(
+                    actionKey="read_excel", displayName="Read Excel", permission=ConnectorPermission.READ
+                ),
                 ConnectorActionMeta(actionKey="read_pdf", displayName="Read PDF", permission=ConnectorPermission.READ),
-                ConnectorActionMeta(actionKey="list_files", displayName="List Files", permission=ConnectorPermission.READ),
+                ConnectorActionMeta(
+                    actionKey="list_files", displayName="List Files", permission=ConnectorPermission.READ
+                ),
             ],
         ),
     ]

@@ -17,7 +17,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_read", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_overdue_invoice"}},
+                {
+                    "id": "n_read",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_overdue_invoice"},
+                },
                 {"id": "n_draft", "type": "SKILL_NODE", "config": {"skillId": "draft-invoice-reminder"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认发送催收邮件"}},
                 {"id": "n_send", "type": "CONNECTOR_NODE", "config": {"connectorId": "gmail", "action": "send_email"}},
@@ -45,7 +49,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_leads", "type": "CONNECTOR_NODE", "config": {"connectorId": "hubspot", "action": "query_new_leads"}},
+                {
+                    "id": "n_leads",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "hubspot", "action": "query_new_leads"},
+                },
                 {"id": "n_score", "type": "SKILL_NODE", "config": {"skillId": "score-lead"}},
                 {"id": "n_draft", "type": "SKILL_NODE", "config": {"skillId": "email-draft"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认发送跟进邮件"}},
@@ -75,7 +83,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_read", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_transactions"}},
+                {
+                    "id": "n_read",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_transactions"},
+                },
                 {"id": "n_snapshot", "type": "SKILL_NODE", "config": {"skillId": "cash-flow-snapshot"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "cash_flow_report"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -100,7 +112,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_sales", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_sales"}},
+                {
+                    "id": "n_sales",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_sales"},
+                },
                 {"id": "n_report", "type": "SKILL_NODE", "config": {"skillId": "weekly-sales-report"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "sales_report"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -125,7 +141,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_expenses", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_expenses"}},
+                {
+                    "id": "n_expenses",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_expenses"},
+                },
                 {"id": "n_categorize", "type": "SKILL_NODE", "config": {"skillId": "expense-categorize"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认支出分类结果"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "expense_report"}},
@@ -153,7 +173,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_emails", "type": "CONNECTOR_NODE", "config": {"connectorId": "gmail", "action": "query_emails"}},
+                {
+                    "id": "n_emails",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "gmail", "action": "query_emails"},
+                },
                 {"id": "n_sentiment", "type": "SKILL_NODE", "config": {"skillId": "customer-sentiment"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "customer_health"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -178,7 +202,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_contract", "type": "CONNECTOR_NODE", "config": {"connectorId": "docusign", "action": "query_contract"}},
+                {
+                    "id": "n_contract",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "docusign", "action": "query_contract"},
+                },
                 {"id": "n_summary", "type": "SKILL_NODE", "config": {"skillId": "contract-summary"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认合同审查结果"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "contract_review"}},
@@ -206,10 +234,18 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_transactions", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_transactions"}},
+                {
+                    "id": "n_transactions",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_transactions"},
+                },
                 {"id": "n_tax", "type": "SKILL_NODE", "config": {"skillId": "tax-reminder"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认税务提醒内容"}},
-                {"id": "n_notify", "type": "CONNECTOR_NODE", "config": {"connectorId": "slack", "action": "send_message"}},
+                {
+                    "id": "n_notify",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "slack", "action": "send_message"},
+                },
                 {"id": "n_end", "type": "END_NODE"},
             ],
             "edges": [
@@ -234,7 +270,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_inventory", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_inventory"}},
+                {
+                    "id": "n_inventory",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_inventory"},
+                },
                 {"id": "n_alert", "type": "SKILL_NODE", "config": {"skillId": "inventory-alert"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "inventory_alert"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -259,7 +299,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_hours", "type": "CONNECTOR_NODE", "config": {"connectorId": "m365", "action": "query_timesheets"}},
+                {
+                    "id": "n_hours",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "m365", "action": "query_timesheets"},
+                },
                 {"id": "n_calc", "type": "SKILL_NODE", "config": {"skillId": "payroll-summary"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认薪资发放"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "payroll_report"}},
@@ -287,7 +331,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_messages", "type": "CONNECTOR_NODE", "config": {"connectorId": "slack", "action": "query_messages"}},
+                {
+                    "id": "n_messages",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "slack", "action": "query_messages"},
+                },
                 {"id": "n_digest", "type": "SKILL_NODE", "config": {"skillId": "slack-digest"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "daily_digest"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -312,7 +360,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_invoices", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_invoices"}},
+                {
+                    "id": "n_invoices",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_invoices"},
+                },
                 {"id": "n_validate", "type": "SKILL_NODE", "config": {"skillId": "invoice-validate"}},
                 {"id": "n_condition", "type": "CONDITION_NODE", "config": {"conditionExpr": "has_anomaly"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "异常发票需确认"}},
@@ -343,8 +395,16 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_finance", "type": "CONNECTOR_NODE", "config": {"connectorId": "quickbooks", "action": "query_financials"}},
-                {"id": "n_customers", "type": "CONNECTOR_NODE", "config": {"connectorId": "hubspot", "action": "query_customers"}},
+                {
+                    "id": "n_finance",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "quickbooks", "action": "query_financials"},
+                },
+                {
+                    "id": "n_customers",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "hubspot", "action": "query_customers"},
+                },
                 {"id": "n_kpi", "type": "SKILL_NODE", "config": {"skillId": "kpi-dashboard-data"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "kpi_data"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -370,7 +430,11 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_market", "type": "CONNECTOR_NODE", "config": {"connectorId": "hubspot", "action": "query_market_data"}},
+                {
+                    "id": "n_market",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "hubspot", "action": "query_market_data"},
+                },
                 {"id": "n_brief", "type": "SKILL_NODE", "config": {"skillId": "competitor-brief"}},
                 {"id": "n_output", "type": "OUTPUT_NODE", "config": {"outputKey": "competitor_brief"}},
                 {"id": "n_end", "type": "END_NODE"},
@@ -395,11 +459,23 @@ BUILTIN_WORKFLOWS: list[dict[str, Any]] = [
         "graphDefinition": {
             "nodes": [
                 {"id": "n_start", "type": "START_NODE"},
-                {"id": "n_customers", "type": "CONNECTOR_NODE", "config": {"connectorId": "hubspot", "action": "query_contacts"}},
+                {
+                    "id": "n_customers",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "hubspot", "action": "query_contacts"},
+                },
                 {"id": "n_draft_email", "type": "SKILL_NODE", "config": {"skillId": "email-draft"}},
                 {"id": "n_approval", "type": "APPROVAL_GATE_NODE", "config": {"title": "确认多渠道消息内容"}},
-                {"id": "n_send_email", "type": "CONNECTOR_NODE", "config": {"connectorId": "gmail", "action": "send_email"}},
-                {"id": "n_send_slack", "type": "CONNECTOR_NODE", "config": {"connectorId": "slack", "action": "send_message"}},
+                {
+                    "id": "n_send_email",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "gmail", "action": "send_email"},
+                },
+                {
+                    "id": "n_send_slack",
+                    "type": "CONNECTOR_NODE",
+                    "config": {"connectorId": "slack", "action": "send_message"},
+                },
                 {"id": "n_end", "type": "END_NODE"},
             ],
             "edges": [

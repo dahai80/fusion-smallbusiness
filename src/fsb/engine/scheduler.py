@@ -67,10 +67,12 @@ class WorkflowScheduler:
     async def _run_scheduled_workflow(self, ws_id: str, wf_id: str):
         logger.info("scheduled run triggered: ws %s wf %s", ws_id, wf_id)
         from .runner import WorkflowRunner
+
         runner = WorkflowRunner(self.store)
         try:
             run = await runner.start(
-                ws_id, wf_id,
+                ws_id,
+                wf_id,
                 trigger_type=TriggerType.SCHEDULE,
                 triggered_by="scheduler",
             )

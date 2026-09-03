@@ -214,8 +214,10 @@ async def test_oauth2_authorize_502(client, ws):
         json={"connectorKey": "quickbooks", "authType": "oauth2"},
     )
     conn_id = conn_resp.json()["connId"]
-    with patch("fsb.routes.connector.fsb_config") as mock_cfg, \
-         patch("fsb.engine.gateway_client.initiate_oauth2", new_callable=AsyncMock) as mock_oauth:
+    with (
+        patch("fsb.routes.connector.fsb_config") as mock_cfg,
+        patch("fsb.engine.gateway_client.initiate_oauth2", new_callable=AsyncMock) as mock_oauth,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_oauth.return_value = {"success": False, "message": "gateway unreachable"}
         resp = await client.post(
@@ -232,8 +234,10 @@ async def test_oauth2_callback_502(client, ws):
         json={"connectorKey": "hubspot", "authType": "oauth2"},
     )
     conn_id = conn_resp.json()["connId"]
-    with patch("fsb.routes.connector.fsb_config") as mock_cfg, \
-         patch("fsb.engine.gateway_client.handle_oauth2_callback", new_callable=AsyncMock) as mock_cb:
+    with (
+        patch("fsb.routes.connector.fsb_config") as mock_cfg,
+        patch("fsb.engine.gateway_client.handle_oauth2_callback", new_callable=AsyncMock) as mock_cb,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_cb.return_value = {"success": False, "message": "token exchange failed"}
         resp = await client.get(
@@ -405,15 +409,22 @@ async def _create_paused_task(ws, title="test task"):
     from fsb.app import app_state
     from fsb.models.common import RunStatus, TriggerType
     from fsb.models.execution import PendingTask, RunInstance
+
     store = app_state.store
     run = RunInstance(
-        workspaceId=ws, workflowId="wf1", status=RunStatus.PAUSED,
-        triggerType=TriggerType.MANUAL, currentNodeId="n_approval",
+        workspaceId=ws,
+        workflowId="wf1",
+        status=RunStatus.PAUSED,
+        triggerType=TriggerType.MANUAL,
+        currentNodeId="n_approval",
     )
     await store.save_run(run.runId, ws, "wf1", run.model_dump(mode="json"))
     task = PendingTask(
-        workspaceId=ws, runId=run.runId, nodeId="n_approval",
-        title=title, content={},
+        workspaceId=ws,
+        runId=run.runId,
+        nodeId="n_approval",
+        title=title,
+        content={},
     )
     await store.save_task(task.taskId, ws, run.runId, task.model_dump(mode="json"))
     return task
@@ -483,7 +494,6 @@ async def test_execution_edit_task(client, ws):
 async def test_execution_history(client, ws):
     resp = await client.get(f"/api/v1/fsb/workspace/{ws}/execution/history")
     assert resp.status_code == 200
-
 
 
 @pytest.mark.asyncio
@@ -603,8 +613,10 @@ async def test_send_to_canvas_export_failure(client, ws):
         json={"name": "canvas-fail"},
     )
     wf_id = wf_resp.json()["wfId"]
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.export_session", new_callable=AsyncMock) as mock_export:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.export_session", new_callable=AsyncMock) as mock_export,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_export.return_value = {"success": False, "message": "service unavailable"}
         resp = await client.post(
@@ -617,8 +629,10 @@ async def test_send_to_canvas_export_failure(client, ws):
 
 @pytest.mark.asyncio
 async def test_sync_to_project_list_failure(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_list.return_value = {"success": False, "message": "artifact svc down"}
         resp = await client.post(
@@ -630,8 +644,10 @@ async def test_sync_to_project_list_failure(client, ws):
 
 @pytest.mark.asyncio
 async def test_sync_to_project_empty(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_list.return_value = {"success": True, "data": []}
         resp = await client.post(
@@ -644,9 +660,11 @@ async def test_sync_to_project_empty(client, ws):
 
 @pytest.mark.asyncio
 async def test_sync_to_project_move_failure(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list, \
-         patch("fsb.engine.artifact_client.move_artifact_to_kb", new_callable=AsyncMock) as mock_move:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.list_artifacts_by_source", new_callable=AsyncMock) as mock_list,
+        patch("fsb.engine.artifact_client.move_artifact_to_kb", new_callable=AsyncMock) as mock_move,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_list.return_value = {"success": True, "data": [{"id": "art_1", "name": "report"}]}
         mock_move.return_value = {"success": False, "message": "kb unavailable"}
@@ -669,8 +687,10 @@ async def test_create_artifact_standalone(client, ws):
 
 @pytest.mark.asyncio
 async def test_create_artifact_live(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_create:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_create,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_create.return_value = {"success": True, "data": {"id": "art_1"}}
         resp = await client.post(
@@ -683,8 +703,10 @@ async def test_create_artifact_live(client, ws):
 
 @pytest.mark.asyncio
 async def test_create_artifact_error(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_create:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.artifact_client.create_external_artifact", new_callable=AsyncMock) as mock_create,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_create.return_value = {"status": "error", "message": "service down"}
         resp = await client.post(
@@ -696,8 +718,10 @@ async def test_create_artifact_error(client, ws):
 
 @pytest.mark.asyncio
 async def test_sync_knowledge_cowork_error(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.cowork_client.sync_knowledge", new_callable=AsyncMock) as mock_sync:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.cowork_client.sync_knowledge", new_callable=AsyncMock) as mock_sync,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_sync.return_value = {"status": "error", "message": "cowork down"}
         resp = await client.post(
@@ -709,8 +733,10 @@ async def test_sync_knowledge_cowork_error(client, ws):
 
 @pytest.mark.asyncio
 async def test_import_snapshot_cowork_error(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.cowork_client.import_snapshot", new_callable=AsyncMock) as mock_imp:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.cowork_client.import_snapshot", new_callable=AsyncMock) as mock_imp,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_imp.return_value = {"status": "error", "message": "cowork down"}
         resp = await client.post(
@@ -722,8 +748,10 @@ async def test_import_snapshot_cowork_error(client, ws):
 
 @pytest.mark.asyncio
 async def test_export_to_project_cowork_error(client, ws):
-    with patch("fsb.routes.integration.fsb_config") as mock_cfg, \
-         patch("fsb.engine.cowork_client.export_to_project", new_callable=AsyncMock) as mock_exp:
+    with (
+        patch("fsb.routes.integration.fsb_config") as mock_cfg,
+        patch("fsb.engine.cowork_client.export_to_project", new_callable=AsyncMock) as mock_exp,
+    ):
         mock_cfg.STANDALONE_MODE = False
         mock_exp.return_value = {"status": "error", "message": "cowork down"}
         resp = await client.post(

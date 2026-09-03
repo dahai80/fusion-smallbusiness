@@ -32,9 +32,11 @@ class EventBus:
                 continue
             try:
                 from .runner import WorkflowRunner
+
                 runner = WorkflowRunner(self.store)
                 run = await runner.start(
-                    ws_id, wf_id,
+                    ws_id,
+                    wf_id,
                     trigger_type=TriggerType.EVENT,
                     triggered_by=f"event:{event.eventId}",
                     input_data=event.payload,

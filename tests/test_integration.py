@@ -23,6 +23,7 @@ def _make_mock_client(method: str, return_value: dict):
 
 def _make_fail_client(method: str):
     import httpx
+
     mock_client = AsyncMock()
     getattr(mock_client, method).side_effect = httpx.ConnectError("connection refused")
     mock_cm = AsyncMock()
@@ -34,12 +35,16 @@ def _make_fail_client(method: str):
 class TestArtifactClient:
     @pytest.mark.asyncio
     async def test_create_external_artifact_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "artifact_id": "art_123",
-            "name": "test_output",
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "artifact_id": "art_123",
+                "name": "test_output",
+            },
+        )
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import create_external_artifact
+
             result = await create_external_artifact(
                 source_module="fsb",
                 workspace_id="ws_001",
@@ -54,6 +59,7 @@ class TestArtifactClient:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import create_external_artifact
+
             result = await create_external_artifact(
                 source_module="fsb",
                 workspace_id="ws_001",
@@ -67,12 +73,16 @@ class TestArtifactClient:
 class TestLLMClient:
     @pytest.mark.asyncio
     async def test_chat_completion_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "choices": [{"message": {"content": "hello"}}],
-            "usage": {"total_tokens": 10},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "choices": [{"message": {"content": "hello"}}],
+                "usage": {"total_tokens": 10},
+            },
+        )
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import chat_completion
+
             result = await chat_completion(
                 model="test-model",
                 messages=[{"role": "user", "content": "hi"}],
@@ -81,13 +91,17 @@ class TestLLMClient:
 
     @pytest.mark.asyncio
     async def test_execute_skill_prompt_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "choices": [{"message": {"content": "skill result"}}],
-            "usage": {"total_tokens": 50},
-            "model": "test",
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "choices": [{"message": {"content": "skill result"}}],
+                "usage": {"total_tokens": 50},
+                "model": "test",
+            },
+        )
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import execute_skill_prompt
+
             result = await execute_skill_prompt(
                 skill_definition="analyze data",
                 input_data={"key": "value"},
@@ -100,6 +114,7 @@ class TestLLMClient:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import execute_skill_prompt
+
             result = await execute_skill_prompt(
                 skill_definition="test",
                 input_data={},
@@ -108,39 +123,51 @@ class TestLLMClient:
 
     @pytest.mark.asyncio
     async def test_list_models_success(self):
-        mock_cm, _ = _make_mock_client("get", {
-            "data": [
-                {"id": "qwen3.5-9b", "object": "model"},
-                {"id": "BGE-M3", "object": "model"},
-            ],
-        })
+        mock_cm, _ = _make_mock_client(
+            "get",
+            {
+                "data": [
+                    {"id": "qwen3.5-9b", "object": "model"},
+                    {"id": "BGE-M3", "object": "model"},
+                ],
+            },
+        )
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import list_models
+
             result = await list_models()
         assert len(result["data"]) == 2
 
     @pytest.mark.asyncio
     async def test_get_model_info_success(self):
-        mock_cm, _ = _make_mock_client("get", {
-            "data": [
-                {"id": "qwen3.5-9b", "object": "model", "owned_by": "mlx"},
-                {"id": "BGE-M3", "object": "model", "owned_by": "mlx"},
-            ],
-        })
+        mock_cm, _ = _make_mock_client(
+            "get",
+            {
+                "data": [
+                    {"id": "qwen3.5-9b", "object": "model", "owned_by": "mlx"},
+                    {"id": "BGE-M3", "object": "model", "owned_by": "mlx"},
+                ],
+            },
+        )
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import get_model_info
+
             result = await get_model_info("qwen3.5-9b")
         assert result["id"] == "qwen3.5-9b"
 
     @pytest.mark.asyncio
     async def test_create_embedding_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "data": [{"embedding": [0.1, 0.2, 0.3], "index": 0}],
-            "model": "BGE-M3",
-            "usage": {"prompt_tokens": 5, "total_tokens": 5},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "data": [{"embedding": [0.1, 0.2, 0.3], "index": 0}],
+                "model": "BGE-M3",
+                "usage": {"prompt_tokens": 5, "total_tokens": 5},
+            },
+        )
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import create_embedding
+
             result = await create_embedding(input="hello world", model="BGE-M3")
         assert len(result["data"]) == 1
         assert result["model"] == "BGE-M3"
@@ -150,6 +177,7 @@ class TestLLMClient:
         mock_cm = _make_fail_client("get")
         with patch("fsb.engine.llm_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.llm_client import list_models
+
             result = await list_models()
         assert result["status"] == "error"
 
@@ -157,14 +185,18 @@ class TestLLMClient:
 class TestGatewayClient:
     @pytest.mark.asyncio
     async def test_execute_action_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "success": True,
-            "code": 0,
-            "data": {"invoice": "INV-001"},
-            "message": "",
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "success": True,
+                "code": 0,
+                "data": {"invoice": "INV-001"},
+                "message": "",
+            },
+        )
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import execute_action
+
             result = await execute_action(
                 connector_key="quickbooks",
                 action_key="list_invoices",
@@ -176,11 +208,15 @@ class TestGatewayClient:
 
     @pytest.mark.asyncio
     async def test_list_connectors_success(self):
-        mock_cm, _ = _make_mock_client("get", {
-            "connectors": [{"connectorKey": "quickbooks", "displayName": "QuickBooks"}],
-        })
+        mock_cm, _ = _make_mock_client(
+            "get",
+            {
+                "connectors": [{"connectorKey": "quickbooks", "displayName": "QuickBooks"}],
+            },
+        )
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import list_connectors
+
             result = await list_connectors()
         assert "connectors" in result
 
@@ -189,20 +225,25 @@ class TestGatewayClient:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import execute_action
+
             result = await execute_action("quickbooks", "list_invoices")
         assert result["success"] is False
 
     @pytest.mark.asyncio
     async def test_create_connection_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "id": "conn_001",
-            "connectorKey": "quickbooks",
-            "authType": "oauth2",
-            "status": "active",
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "id": "conn_001",
+                "connectorKey": "quickbooks",
+                "authType": "oauth2",
+                "status": "active",
+            },
+        )
         mock_cm.__aenter__.return_value.post.return_value.status_code = 201
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import create_connection
+
             result = await create_connection(
                 connection_id="conn_001",
                 connector_key="quickbooks",
@@ -212,13 +253,17 @@ class TestGatewayClient:
 
     @pytest.mark.asyncio
     async def test_get_connection_success(self):
-        mock_cm, _ = _make_mock_client("get", {
-            "id": "conn_001",
-            "connectorKey": "quickbooks",
-            "status": "active",
-        })
+        mock_cm, _ = _make_mock_client(
+            "get",
+            {
+                "id": "conn_001",
+                "connectorKey": "quickbooks",
+                "status": "active",
+            },
+        )
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import get_connection
+
             result = await get_connection("conn_001")
         assert result["id"] == "conn_001"
 
@@ -234,30 +279,39 @@ class TestGatewayClient:
 
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import delete_connection
+
             result = await delete_connection("conn_001")
         assert result["success"] is True
 
     @pytest.mark.asyncio
     async def test_refresh_connection_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "success": True,
-            "code": 0,
-            "message": "refreshed",
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "success": True,
+                "code": 0,
+                "message": "refreshed",
+            },
+        )
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import refresh_connection
+
             result = await refresh_connection("conn_001")
         assert result["success"] is True
 
     @pytest.mark.asyncio
     async def test_test_action_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "success": True,
-            "code": 0,
-            "data": {"result": "test_ok"},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "success": True,
+                "code": 0,
+                "data": {"result": "test_ok"},
+            },
+        )
         with patch("fsb.engine.gateway_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.gateway_client import test_action
+
             result = await test_action("quickbooks", "list_invoices")
         assert result["success"] is True
 
@@ -265,13 +319,17 @@ class TestGatewayClient:
 class TestCoworkClient:
     @pytest.mark.asyncio
     async def test_register_module_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "result": {"id": "fsb", "name": "Small Business"},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {"id": "fsb", "name": "Small Business"},
+            },
+        )
         with patch("fsb.engine.cowork_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.cowork_client import register_module
+
             result = await register_module(
                 module_id="fsb",
                 name="Small Business",
@@ -283,13 +341,17 @@ class TestCoworkClient:
 
     @pytest.mark.asyncio
     async def test_push_notification_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "jsonrpc": "2.0",
-            "id": 2,
-            "result": {"id": "notif_123"},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": {"id": "notif_123"},
+            },
+        )
         with patch("fsb.engine.cowork_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.cowork_client import push_notification
+
             result = await push_notification(
                 space_id="ws_001",
                 user_id="admin",
@@ -303,6 +365,7 @@ class TestCoworkClient:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.cowork_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.cowork_client import register_module
+
             result = await register_module("fsb", "test")
         assert result["status"] == "error"
 
@@ -310,84 +373,112 @@ class TestCoworkClient:
 class TestRAGClient:
     @pytest.mark.asyncio
     async def test_list_knowledge_bases_success(self):
-        mock_cm, _ = _make_mock_client("get", [
-            {"id": "kb_001", "name": "Sales KB"},
-        ])
+        mock_cm, _ = _make_mock_client(
+            "get",
+            [
+                {"id": "kb_001", "name": "Sales KB"},
+            ],
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import list_knowledge_bases
+
             result = await list_knowledge_bases()
         assert result["success"] is True
         assert len(result["data"]) == 1
 
     @pytest.mark.asyncio
     async def test_create_knowledge_base_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "id": "kb_002",
-            "name": "Invoice KB",
-            "status": "created",
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "id": "kb_002",
+                "name": "Invoice KB",
+                "status": "created",
+            },
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import create_knowledge_base
+
             result = await create_knowledge_base(name="Invoice KB")
         assert result["success"] is True
         assert result["data"]["id"] == "kb_002"
 
     @pytest.mark.asyncio
     async def test_search_success(self):
-        mock_cm, _ = _make_mock_client("post", [
-            {"id": "chunk_1", "text": "invoice data", "score": 0.95},
-        ])
+        mock_cm, _ = _make_mock_client(
+            "post",
+            [
+                {"id": "chunk_1", "text": "invoice data", "score": 0.95},
+            ],
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import search
+
             result = await search(kb_id="kb_001", query="overdue invoices")
         assert result["success"] is True
         assert len(result["data"]) == 1
 
     @pytest.mark.asyncio
     async def test_ask_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "answer": "You have 3 overdue invoices",
-            "sources": [{"doc_name": "invoice_report.pdf", "score": 0.92}],
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "answer": "You have 3 overdue invoices",
+                "sources": [{"doc_name": "invoice_report.pdf", "score": 0.92}],
+            },
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import ask
+
             result = await ask(kb_id="kb_001", question="How many overdue invoices?")
         assert result["success"] is True
         assert "overdue" in result["data"]["answer"]
 
     @pytest.mark.asyncio
     async def test_upload_document_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "doc_id": "doc_001",
-            "chunks": 5,
-            "chars": 1200,
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "doc_id": "doc_001",
+                "chunks": 5,
+                "chars": 1200,
+            },
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import upload_document
+
             result = await upload_document(kb_id="kb_001", file_path="/tmp/test.json")
         assert result["success"] is True
         assert result["data"]["doc_id"] == "doc_001"
 
     @pytest.mark.asyncio
     async def test_delete_knowledge_base_success(self):
-        mock_cm, _ = _make_mock_client("delete", {
-            "id": "kb_001",
-            "status": "deleted",
-        })
+        mock_cm, _ = _make_mock_client(
+            "delete",
+            {
+                "id": "kb_001",
+                "status": "deleted",
+            },
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import delete_knowledge_base
+
             result = await delete_knowledge_base("kb_001")
         assert result["success"] is True
 
     @pytest.mark.asyncio
     async def test_rag_health_success(self):
-        mock_cm, _ = _make_mock_client("get", {
-            "status": "ok",
-            "knowledge_bases": 2,
-            "embedding_available": True,
-        })
+        mock_cm, _ = _make_mock_client(
+            "get",
+            {
+                "status": "ok",
+                "knowledge_bases": 2,
+                "embedding_available": True,
+            },
+        )
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import rag_health
+
             result = await rag_health()
         assert result["success"] is True
 
@@ -396,6 +487,7 @@ class TestRAGClient:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.rag_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.rag_client import search
+
             result = await search(kb_id="kb_001", query="test")
         assert result["success"] is False
 
@@ -403,26 +495,34 @@ class TestRAGClient:
 class TestArtifactClientExtended:
     @pytest.mark.asyncio
     async def test_export_session_success(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "result": {"count": 3, "path": "/tmp/exports/session_001"},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {"count": 3, "path": "/tmp/exports/session_001"},
+            },
+        )
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import export_session
+
             result = await export_session(session_id="session_001", output_dir="/tmp/exports/session_001")
         assert result["success"] is True
         assert result["data"]["count"] == 3
 
     @pytest.mark.asyncio
     async def test_export_session_rpc_error(self):
-        mock_cm, _ = _make_mock_client("post", {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "error": {"code": -32602, "message": "Invalid params"},
-        })
+        mock_cm, _ = _make_mock_client(
+            "post",
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "error": {"code": -32602, "message": "Invalid params"},
+            },
+        )
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import export_session
+
             result = await export_session(session_id="bad_session", output_dir="/tmp/x")
         assert result["success"] is False
 
@@ -431,6 +531,7 @@ class TestArtifactClientExtended:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import export_session
+
             result = await export_session(session_id="s1", output_dir="/tmp/x")
         assert result["success"] is False
 
@@ -439,6 +540,7 @@ class TestArtifactClientExtended:
         mock_cm, _ = _make_mock_client("post", {"ok": True})
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import move_artifact_to_kb
+
             result = await move_artifact_to_kb(artifact_id="art_001", project_id="proj_001")
         assert result["success"] is True
 
@@ -447,19 +549,24 @@ class TestArtifactClientExtended:
         mock_cm = _make_fail_client("post")
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import move_artifact_to_kb
+
             result = await move_artifact_to_kb(artifact_id="art_001", project_id="proj_001")
         assert result["success"] is False
 
     @pytest.mark.asyncio
     async def test_list_artifacts_by_source_success(self):
-        mock_cm, _ = _make_mock_client("get", {
-            "artifacts": [
-                {"id": "art_001", "name": "report", "source_module": "fsb"},
-                {"id": "art_002", "name": "invoice", "source_module": "fsb"},
-            ],
-        })
+        mock_cm, _ = _make_mock_client(
+            "get",
+            {
+                "artifacts": [
+                    {"id": "art_001", "name": "report", "source_module": "fsb"},
+                    {"id": "art_002", "name": "invoice", "source_module": "fsb"},
+                ],
+            },
+        )
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import list_artifacts_by_source
+
             result = await list_artifacts_by_source(source_module="fsb", workspace_id="ws_001")
         assert result["success"] is True
         assert len(result["data"]) == 2
@@ -469,6 +576,7 @@ class TestArtifactClientExtended:
         mock_cm = _make_fail_client("get")
         with patch("fsb.engine.artifact_client.httpx.AsyncClient", return_value=mock_cm):
             from fsb.engine.artifact_client import list_artifacts_by_source
+
             result = await list_artifacts_by_source(source_module="fsb")
         assert result["success"] is False
 
