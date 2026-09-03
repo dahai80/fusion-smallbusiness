@@ -1,18 +1,24 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..db.store import Store
 from ..models.common import ApprovalAction
 from ..models.execution import ApprovalRecord, PendingTask, RunInstance
+from ..tenant_dep import ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workspace/{wsId}", tags=["execution"])
+router = APIRouter(
+    prefix="/workspace/{wsId}",
+    tags=["execution"],
+    dependencies=[Depends(ws_tenant_dep)],
+)
 
 
 def get_store() -> Store:
     from ..app import app_state
+
     return app_state.store
 
 
@@ -41,6 +47,7 @@ async def approve_task(wsId: str, taskId: str):
         await store.save_run(run.runId, wsId, run.workflowId, run.model_dump(mode="json"))
 
         from ..engine.runner import WorkflowRunner
+
         runner = WorkflowRunner(store)
         await runner.resume(run.runId, "approved")
         logger.info("task approved: %s run %s", taskId, task.runId)
@@ -65,6 +72,7 @@ async def deny_task(wsId: str, taskId: str):
         await store.save_run(run.runId, wsId, run.workflowId, run.model_dump(mode="json"))
 
         from ..engine.runner import WorkflowRunner
+
         runner = WorkflowRunner(store)
         await runner.resume(run.runId, "denied")
         logger.info("task denied: %s run %s", taskId, task.runId)
@@ -96,6 +104,7 @@ async def edit_task(wsId: str, taskId: str, body: dict):
         await store.save_run(run.runId, wsId, run.workflowId, run.model_dump(mode="json"))
 
         from ..engine.runner import WorkflowRunner
+
         runner = WorkflowRunner(store)
         await runner.resume(run.runId, "approved")
         logger.info("task edited+approved: %s run %s", taskId, task.runId)
@@ -107,9 +116,6 @@ async def execution_history(wsId: str, workflowId: str | None = None, offset: in
     store = get_store()
     items = await store.list_runs(wsId, wf_id=workflowId, offset=offset, limit=limit)
     return items
-
-
-
 
 
 @router.get("/execution/export")

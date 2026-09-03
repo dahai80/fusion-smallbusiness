@@ -219,7 +219,7 @@ FSB communicates with upstream services via HTTP/JSON-RPC clients. All URLs are 
 | Env Variable | Default | Description |
 |--------------|---------|-------------|
 | `FSB_ARTIFACTS_ENGINE_URL` | `http://127.0.0.1:11451` | fusion-artifacts-engine service URL |
-| `FSB_FUSION_MLX_URL` | `http://localhost:11434` | fusion-mlx LLM API URL |
+| `FSB_FUSION_MLX_URL` | `http://localhost:11432` | fusion-mlx LLM API URL (via fusion-gateway) |
 | `FSB_FUSION_GATEWAY_URL` | `http://localhost:11444` | fusion-gateway service URL |
 | `FSB_FUSION_COWORK_URL` | `http://localhost:11437` | fusion-cowork RPC URL |
 | `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag KB service URL |
@@ -227,7 +227,10 @@ FSB communicates with upstream services via HTTP/JSON-RPC clients. All URLs are 
 | `FSB_LLM_DEFAULT_MODEL` | `default` | Default LLM model name |
 | `FSB_EMBEDDING_MODEL` | `BGE-M3` | Default embedding model name |
 | `FSB_HTTP_TIMEOUT` | `10` | HTTP request timeout (seconds) |
-| `FSB_STANDALONE_MODE` | `true` | Standalone mode: when true, integration routes return stub responses to avoid errors when upstream is unavailable |
+| `FSB_STANDALONE_MODE` | `true` | Standalone mode: when true, integration routes return stub responses AND tenant/auth middleware is skipped |
+| `FSB_FUSION_IDENTITY_URL` | `http://127.0.0.1:11470` | fusion-identity JWT verify endpoint (multi-tenant auth) |
+| `FSB_FUSION_IDENTITY_SERVICE_TOKEN` | _(empty)_ | service token gating `POST /api/v1/auth/verify` |
+| `FSB_AUTH_REQUIRE_JWT` | `true` | require valid JWT on all non-exempt routes (non-standalone mode only) |
 
 Integration points:
 
@@ -237,6 +240,18 @@ Integration points:
 - **APPROVAL_GATE_NODE** → `cowork_client`: Approval gate notifications pushed to workspace + project KB sync/snapshot import/workspace export
 
 All clients gracefully degrade on connection failure and never block workflow execution.
+
+### Multi-tenant authentication (fusion-identity)
+
+In non-standalone mode (`FSB_STANDALONE_MODE=false`), all `/workspace/{wsId}/*` routes require authentication via [fusion-identity](https://github.com/dahai80/fusion-identity) (the sole JWT issuer + tenant registry for the Fusion ecosystem):
+
+- Every non-exempt request must carry `X-Tenant-Id` header + `Authorization: Bearer <JWT>`.
+- The JWT is verified against `POST {FSB_FUSION_IDENTITY_URL}/api/v1/auth/verify` (gated by `FSB_FUSION_IDENTITY_SERVICE_TOKEN`).
+- JWT `tid` claim must match the `X-Tenant-Id` header (401 on mismatch).
+- The path `{wsId}` is bound to the verified tenant — accessing another tenant's workspace returns 403.
+- Revoked tokens are rejected with 401.
+
+In standalone mode (default) the auth middleware is skipped, so routes run unguarded — matching the fail-soft development/testing baseline.
 
 ## fusion-studio Plugin
 

@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from .auth import verify_jwt_with_identity
+from .config import fsb_config
 from .db.store import Store
 from .routes import (
     connector,
@@ -16,6 +18,23 @@ from .routes import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _install_auth(app: FastAPI) -> None:
+    if fsb_config.STANDALONE_MODE:
+        logger.info("auth: standalone mode — tenant middleware skipped, workspace routes UNGUARDED")
+        return
+    try:
+        from fusion_core.tenant import install_tenant_middleware
+    except ImportError:
+        logger.warning("auth: fusion_core.tenant not installed — workspace routes run UNGUARDED")
+        return
+    install_tenant_middleware(
+        app,
+        verify_jwt=verify_jwt_with_identity,
+        require_jwt=fsb_config.AUTH_REQUIRE_JWT,
+    )
+    logger.info("auth: tenant middleware installed require_jwt=%s", fsb_config.AUTH_REQUIRE_JWT)
 
 
 class AppState:
@@ -33,6 +52,7 @@ async def lifespan(application: FastAPI):
 
     try:
         from .engine.cowork_client import register_module
+
         result = await register_module(
             module_id="fsb",
             name="Small Business",
@@ -69,6 +89,8 @@ app.include_router(execution.router, prefix=API_PREFIX)
 app.include_router(integration.router, prefix=API_PREFIX)
 app.include_router(external.router, prefix=API_PREFIX)
 app.include_router(variable.router, prefix=API_PREFIX)
+
+_install_auth(app)
 
 
 @app.get("/health")
