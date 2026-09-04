@@ -2,6 +2,8 @@
 
 [中文文档](README_CN.md)
 
+> **Version 0.2.0rc1** — Enterprise release candidate. Single-node + multi-node (Postgres) production-ready. See [Changelog](#changelog).
+
 Cross-SaaS intelligent business workspace for small business owners and teams.
 
 ## Product Positioning
@@ -371,3 +373,34 @@ The plugin provides three panels:
 cd /path/to/fusion-smallbusiness
 source .venv/bin/activate
 ```
+
+## Changelog
+
+### 0.2.0rc1 (2026-09-04) — Enterprise Release Candidate
+
+**Security (P1, release-blocking):**
+- Connector lookup fix — `engine/runner.py` resolves Connector by real PK via `connectorKey`, correct `connectionId` propagation.
+- Secure defaults — `STANDALONE_MODE=false`, `AUTH_REQUIRE_JWT=true` by default; standalone is now an explicit opt-in.
+- SSRF hardening — `webhook_dispatcher.py` re-runs `resolve_pinned_url` at dispatch time, refuses loopback/rebind, sends `Host` header.
+- Secrets encryption-at-rest — `engine/secret_crypto.py` (stdlib scrypt + HMAC stream cipher, `fsbenc1:` prefix) for webhook secrets and connector authConfig; `FSB_SECRET_KEY` env.
+- Rate limiting + body-size limits — `RateLimitMiddleware` (token bucket, per-tenant, 413 on oversized ingestion).
+
+**Performance (P2):**
+- DB connection pool (`_ConnectionPool`, `FSB_DB_POOL_SIZE=8`) replaces single shared connection; 40-parallel-write concurrency test green.
+- O(1) run persistence — `run_traces` table + `append_run_trace`; run blob stays constant-size (`nodeTrace=[]`), re-hydrated on read.
+- Run retention scheduled job (`FSB_RUN_RETENTION_DAYS=30`) prevents unbounded `runs`/`pending_tasks`/`events` growth.
+- `/health` verifies local DB; `/health/ready` reports upstream reachability (fail-soft, upstream down ≠ instance down).
+
+**Multi-node readiness:**
+- Pluggable storage backend — `make_store()` factory, `FSB_DB_BACKEND` (default `sqlite`); full asyncpg `PostgresStore` mirrors the `Store` API (10 tables + `run_traces` + 3 primitive tables, JSONB + expression indexes).
+- Scheduler leader election — `scheduler_lease` table (both backends), TTL lease + TTL/3 renewal job, non-leader early-return.
+- EventBus distributed dedup — `event_dedup` table replaces in-memory dict on PG backend (`FSB_RATE_LIMIT_DISTRIBUTED`), in-memory fallback.
+- Distributed rate limit — `rate_limit_buckets` table, middleware delegates when distributed.
+- New env: `FSB_DB_BACKEND`, `FSB_PG_DSN`, `FSB_PG_POOL_SIZE`, `FSB_SCHEDULER_LEADER_TTL`, `FSB_EVENT_DEDUP_TTL`, `FSB_RATE_LIMIT_DISTRIBUTED`.
+- 9 live-Postgres integration tests (skip when no local PG).
+
+**Tests:** 328 passing (319 SQLite + 9 Postgres). ruff clean.
+
+### 0.1.4
+
+- Initial connector/skill/workflow registries, DAG engine, approval gates, scheduler, event bus, fusion-identity multi-tenant auth.

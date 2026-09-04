@@ -2,6 +2,8 @@
 
 [English](README.md)
 
+> **版本 0.2.0rc1** — 企业级发布候选。单节点 + 多节点（Postgres）生产就绪。见 [更新日志](#更新日志)。
+
 面向小微企业主/小团队的跨 SaaS 智能业务工作台。
 
 ## 产品定位
@@ -370,3 +372,34 @@ FSB 通过 fusion-studio 的 Plugin 机制提供前端集成，插件位于：
 cd /path/to/fusion-smallbusiness
 source .venv/bin/activate
 ```
+
+## 更新日志
+
+### 0.2.0rc1 (2026-09-04) — 企业级发布候选
+
+**安全（P1，发布阻断项）：**
+- Connector 查找修复 — `engine/runner.py` 按 `connectorKey` 解析真实 PK，正确传递 `connectionId`。
+- 安全默认值 — 默认 `STANDALONE_MODE=false`、`AUTH_REQUIRE_JWT=true`；standalone 改为显式开启。
+- SSRF 加固 — `webhook_dispatcher.py` 分发时重新执行 `resolve_pinned_url`，拒绝环回/重绑定，携带 `Host` 头。
+- 密钥静态加密 — `engine/secret_crypto.py`（标准库 scrypt + HMAC 流密码，`fsbenc1:` 前缀）加密 webhook 密钥与 connector authConfig；环境变量 `FSB_SECRET_KEY`。
+- 限流 + 请求体大小限制 — `RateLimitMiddleware`（令牌桶，按租户，超大写入返回 413）。
+
+**性能（P2）：**
+- DB 连接池（`_ConnectionPool`，`FSB_DB_POOL_SIZE=8`）替换单连接；40 并发写测试通过。
+- O(1) 运行持久化 — `run_traces` 表 + `append_run_trace`；运行 blob 恒定大小（`nodeTrace=[]`），读取时重组。
+- 运行保留定时任务（`FSB_RUN_RETENTION_DAYS=30`）防止 `runs`/`pending_tasks`/`events` 无限增长。
+- `/health` 校验本地 DB；`/health/ready` 报告上游可达性（fail-soft，上游不可用 ≠ 实例不可用）。
+
+**多节点就绪：**
+- 可插拔存储后端 — `make_store()` 工厂，`FSB_DB_BACKEND`（默认 `sqlite`）；完整 asyncpg `PostgresStore` 对齐 `Store` API（10 表 + `run_traces` + 3 原语表，JSONB + 表达式索引）。
+- 调度器 leader 选举 — `scheduler_lease` 表（双后端），TTL 租约 + TTL/3 续约任务，非 leader 提前返回。
+- EventBus 分布式去重 — `event_dedup` 表在 PG 后端替换内存字典（`FSB_RATE_LIMIT_DISTRIBUTED`），DB 失败回退内存。
+- 分布式限流 — `rate_limit_buckets` 表，middleware 在分布式模式委托存储。
+- 新增环境变量：`FSB_DB_BACKEND`、`FSB_PG_DSN`、`FSB_PG_POOL_SIZE`、`FSB_SCHEDULER_LEADER_TTL`、`FSB_EVENT_DEDUP_TTL`、`FSB_RATE_LIMIT_DISTRIBUTED`。
+- 9 个真实 Postgres 集成测试（无本地 PG 时跳过）。
+
+**测试：** 328 通过（319 SQLite + 9 Postgres）。ruff clean。
+
+### 0.1.4
+
+- 初始 connector/skill/workflow 注册表、DAG 引擎、审批门、调度器、事件总线、fusion-identity 多租户鉴权。
