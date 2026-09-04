@@ -30,3 +30,5 @@ class Connector(BaseModel):
     permissions: list[str] = Field(default_factory=list)
     lastRefreshAt: datetime | None = None
     authConfig: dict[str, Any] = Field(default_factory=dict)
+    authConfigEnc: str = ""
+    connectionId: str = ""

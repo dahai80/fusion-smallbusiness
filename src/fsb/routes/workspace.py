@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..db.store import Store
 from ..models.workspace import Workspace, WorkspaceCreate, WorkspaceUpdate
-from ..tenant_dep import ws_tenant_dep
+from ..tenant_dep import current_tenant_id, ws_tenant_dep
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +22,24 @@ def get_store() -> Store:
 @router.post("", response_model=Workspace)
 async def create_workspace(body: WorkspaceCreate):
     store = get_store()
+    tid = current_tenant_id()
     ws = Workspace(**body.model_dump())
+    if tid is not None:
+        if ws.wsId and ws.wsId != tid:
+            raise HTTPException(status_code=403, detail="workspace id must match caller tenant in multi-tenant mode")
+        ws.wsId = tid
     await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
-    logger.info("workspace created: %s", ws.wsId)
+    logger.info("workspace created: %s tenant=%s", ws.wsId, tid)
     return ws
 
 
 @router.get("", response_model=list[Workspace])
 async def list_workspaces(offset: int = 0, limit: int = 100, search: str = "", projectId: str = ""):
     store = get_store()
+    tid = current_tenant_id()
     items = await store.list_workspaces(offset=offset, limit=limit, search=search, project_id=projectId)
+    if tid is not None:
+        items = [d for d in items if d.get("wsId") == tid]
     return [Workspace(**d) for d in items]
 
 
@@ -102,9 +110,14 @@ async def export_workspace(wsId: str):
 @router.post("/import", response_model=Workspace)
 async def import_workspace(body: dict):
     store = get_store()
+    tid = current_tenant_id()
     ws_data = body.get("workspace")
     if ws_data and isinstance(ws_data, dict):
         ws = Workspace(**ws_data)
+        if tid is not None:
+            if ws.wsId and ws.wsId != tid:
+                raise HTTPException(status_code=403, detail="imported workspace id must match caller tenant")
+            ws.wsId = tid
         await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
         for c in body.get("connectors", []):
             from ..models.connector import Connector
@@ -124,7 +137,7 @@ async def import_workspace(body: dict):
             wf = Workflow(**w)
             wf.workspaceId = ws.wsId
             await store.save_workflow(wf.wfId, ws.wsId, wf.model_dump(mode="json"))
-        logger.info("workspace imported (full): %s", ws.wsId)
+        logger.info("workspace imported (full): %s tenant=%s", ws.wsId, tid)
         return ws
     name = body.get("name") or body.get("title") or ""
     if not name:
@@ -135,8 +148,10 @@ async def import_workspace(body: dict):
         projectId=body.get("projectId"),
         bindAgentId=body.get("bindAgentId"),
     )
+    if tid is not None:
+        ws.wsId = tid
     await store.save_workspace(ws.wsId, ws.model_dump(mode="json"))
-    logger.info("workspace imported (simple): %s", ws.wsId)
+    logger.info("workspace imported (simple): %s tenant=%s", ws.wsId, tid)
     return ws
 
 

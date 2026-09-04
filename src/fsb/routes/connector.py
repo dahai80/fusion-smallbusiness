@@ -27,6 +27,53 @@ def get_store() -> Store:
     return app_state.store
 
 
+def _encrypt_auth_config(auth_config: dict) -> str:
+    import json
+
+    from ..engine.secret_crypto import encrypt_secret
+
+    if not auth_config:
+        return ""
+    return encrypt_secret(json.dumps(auth_config, sort_keys=True), fsb_config.SECRET_KEY)
+
+
+def _decrypt_auth_config(stored: str) -> dict:
+    import json
+
+    from ..engine.secret_crypto import decrypt_secret
+
+    if not stored:
+        return {}
+    plain = decrypt_secret(stored, fsb_config.SECRET_KEY)
+    if not plain:
+        return {}
+    try:
+        return json.loads(plain)
+    except Exception:
+        return {}
+
+
+def _persist_connector(conn: Connector) -> dict:
+    data = conn.model_dump(mode="json")
+    data["authConfigEnc"] = _encrypt_auth_config(data.get("authConfig", {}))
+    data["authConfig"] = {}
+    return data
+
+
+def _hydrate_connector(data: dict) -> Connector:
+    enc = data.get("authConfigEnc", "")
+    if enc:
+        data = {**data, "authConfig": _decrypt_auth_config(enc)}
+    return Connector(**data)
+
+
+def _redact_connector(conn: Connector) -> Connector:
+    out = conn.model_copy(deep=True)
+    out.authConfig = {}
+    out.authConfigEnc = ""
+    return out
+
+
 @router.post("", response_model=Connector)
 async def create_connector(wsId: str, body: ConnectorCreate):
     store = get_store()
@@ -36,18 +83,19 @@ async def create_connector(wsId: str, body: ConnectorCreate):
     conn = Connector(workspaceId=wsId, **body.model_dump())
     conn.authStatus = AuthStatus.CONNECTED
     conn.connectedAt = utc_now()
-    await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
+    persist = _persist_connector(conn)
+    await store.save_connector(conn.connId, wsId, persist)
     ws["connectorIds"] = list(set([*ws.get("connectorIds", []), conn.connectorKey]))
     await store.save_workspace(wsId, ws)
     logger.info("connector created: %s in ws %s", conn.connId, wsId)
-    return conn
+    return _redact_connector(conn)
 
 
 @router.get("", response_model=list[Connector])
 async def list_connectors(wsId: str, offset: int = 0, limit: int = 100):
     store = get_store()
     items = await store.list_connectors(wsId, offset=offset, limit=limit)
-    return [Connector(**d) for d in items]
+    return [_redact_connector(_hydrate_connector(d)) for d in items]
 
 
 @router.put("/{connId}", response_model=Connector)
@@ -56,13 +104,13 @@ async def update_connector(wsId: str, connId: str, body: ConnectorUpdate):
     data = await store.get_connector(connId)
     if not data or data.get("workspaceId") != wsId:
         raise HTTPException(status_code=404, detail="connector not found")
-    conn = Connector(**data)
+    conn = _hydrate_connector(data)
     update = body.model_dump(exclude_unset=True)
     for k, v in update.items():
         setattr(conn, k, v)
-    await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
+    await store.save_connector(conn.connId, wsId, _persist_connector(conn))
     logger.info("connector updated: %s", connId)
-    return conn
+    return _redact_connector(conn)
 
 
 @router.post("/{connId}/disconnect")
@@ -71,9 +119,9 @@ async def disconnect_connector(wsId: str, connId: str):
     data = await store.get_connector(connId)
     if not data or data.get("workspaceId") != wsId:
         raise HTTPException(status_code=404, detail="connector not found")
-    conn = Connector(**data)
+    conn = _hydrate_connector(data)
     conn.authStatus = AuthStatus.DISCONNECTED
-    await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
+    await store.save_connector(conn.connId, wsId, _persist_connector(conn))
     logger.info("connector disconnected: %s", connId)
     return {"success": True}
 
@@ -84,10 +132,10 @@ async def refresh_connector(wsId: str, connId: str):
     data = await store.get_connector(connId)
     if not data or data.get("workspaceId") != wsId:
         raise HTTPException(status_code=404, detail="connector not found")
-    conn = Connector(**data)
+    conn = _hydrate_connector(data)
     conn.authStatus = AuthStatus.CONNECTED
     conn.lastRefreshAt = utc_now()
-    await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
+    await store.save_connector(conn.connId, wsId, _persist_connector(conn))
     logger.info("connector refreshed: %s", connId)
     return {"success": True}
 
@@ -177,9 +225,12 @@ async def oauth2_callback(wsId: str, connId: str, code: str, state: str = ""):
     if not result.get("success"):
         raise HTTPException(status_code=502, detail=result.get("message", "oauth2 callback failed"))
 
-    conn = Connector(**data)
+    conn = _hydrate_connector(data)
     conn.authStatus = AuthStatus.CONNECTED
     conn.connectedAt = utc_now()
-    await store.save_connector(conn.connId, wsId, conn.model_dump(mode="json"))
-    logger.info("oauth2 callback: conn=%s connected", connId)
+    gw_conn_id = result.get("connectionId", "") if isinstance(result, dict) else ""
+    if gw_conn_id:
+        conn.connectionId = gw_conn_id
+    await store.save_connector(conn.connId, wsId, _persist_connector(conn))
+    logger.info("oauth2 callback: conn=%s connected connectionId=%s", connId, conn.connectionId)
     return result

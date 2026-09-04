@@ -46,9 +46,14 @@ src/fsb/
 ├── db/
 │   └── store.py             # SQLite async store (10 tables)
 ├── config.py                # Centralized upstream service URL config
+├── seed.py                  # Builtin skills/workflows seeding in app lifespan
+├── auth.py                  # fusion-identity JWT verify
+├── tenant_dep.py            # Tenant ownership + admin-role guards
 ├── engine/
-│   ├── runner.py            # Workflow DAG execution engine (approval gates + webhook callbacks + upstream integration)
+│   ├── runner.py            # Workflow DAG execution engine (approval gates + webhook callbacks + upstream integration + chat notify)
 │   ├── router.py            # Intent routing (slash commands + fuzzy natural language matching)
+│   ├── expr.py              # Safe AST-based condition expression evaluator
+│   ├── chat_client.py       # fusion-chat HTTP client (agent bind/unbind + run-completion notify, fail-soft)
 │   ├── scheduler.py         # APScheduler cron scheduling
 │   ├── event_bus.py         # Event-driven trigger engine
 │   ├── webhook_dispatcher.py # Webhook HTTP callback dispatcher
@@ -61,10 +66,12 @@ src/fsb/
 │   ├── workspace.py         # Workspace CRUD + import/export
 │   ├── connector.py         # Connector connect/disconnect/refresh + metadata
 │   ├── skill.py             # Skill CRUD + test
-│   ├── workflow.py          # Workflow CRUD + run + schedule
-│   ├── execution.py         # Execution history + approval actions
+│   ├── workflow.py          # Workflow CRUD + run + schedule + canvas layout
+│   ├── execution.py         # Execution history + approval actions + CSV export
+│   ├── intent.py            # Intent match / commands / run routes
 │   ├── integration.py       # Integration routes (canvas/project/artifact)
-│   ├── external.py          # External triggers + events + webhooks
+│   ├── external.py          # External triggers + events + webhooks (tenant-guarded)
+│   ├── chat.py              # Agent bind/unbind + chat-driven workflow run
 │   └── variable.py          # Variables + templates
 ├── skills/
 │   └── registry.py          # 15 built-in skill definitions
@@ -117,13 +124,18 @@ All endpoints prefixed with `/api/v1/fsb`
 | Workflow | `/workspace/{wsId}/workflow/{wfId}/run` | POST |
 | Workflow | `/workspace/{wsId}/workflow/{wfId}/schedule` | POST/DELETE |
 | Workflow | `/workspace/{wsId}/workflow/{wfId}/export` | POST |
+| Workflow | `/workspace/{wsId}/workflow/{wfId}/canvas-layout` | PUT |
+| Intent | `/workspace/{wsId}/intent/match` | POST |
+| Intent | `/workspace/{wsId}/intent/match` | POST |
+| Intent | `/workspace/{wsId}/intent/commands` | GET |
+| Intent | `/workspace/{wsId}/intent/run` | POST |
 | Execution | `/workspace/{wsId}/task/pending` | GET |
 | Execution | `/workspace/{wsId}/task/{taskId}/approve` | POST |
 | Execution | `/workspace/{wsId}/task/{taskId}/deny` | POST |
 | Execution | `/workspace/{wsId}/task/{taskId}/edit` | POST |
 | Execution | `/workspace/{wsId}/execution/history` | GET |
 | Execution | `/workspace/{wsId}/execution/{runId}` | GET |
-| Execution | `/workspace/{wsId}/execution/export` | GET |
+| Execution | `/workspace/{wsId}/execution/export` | GET (json/csv via `?format=csv`) |
 | External | `/external/workflow/{wfId}/trigger` | POST |
 | External | `/external/workflow/{wfId}/status` | GET |
 | External | `/external/event` | POST |
@@ -134,6 +146,9 @@ All endpoints prefixed with `/api/v1/fsb`
 | External | `/external/webhook/{webhookId}` | DELETE |
 | Variable | `/workspace/{wsId}/variable` | GET/PUT |
 | Template | `/workspace/{wsId}/template` | GET/POST |
+| Chat | `/workspace/{wsId}/agent/bind` | POST |
+| Chat | `/workspace/{wsId}/agent/unbind` | POST |
+| Chat | `/workspace/{wsId}/chat/run` | POST |
 
 ## Quick Start
 
@@ -145,7 +160,7 @@ source .venv/bin/activate
 fusion-smallbusiness
 # or: uvicorn fsb.app:app --host 0.0.0.0 --port 11490
 
-# Run tests (291 tests, 95% coverage)
+# Run tests (307 tests, 95% coverage)
 pytest tests/ -v
 
 # Run tests with coverage report
@@ -211,6 +226,8 @@ FSB depends on the following upstream modules, tracked via issues:
 | fusion-artifacts-engine | [#18](https://github.com/dahai80/fusion-artifacts-engine/issues/18) | Workflow output → Artifact creation API, Artifact reverse-input to workflow | ✅ Integrated |
 | fusion-rag | [#27](https://github.com/dahai80/fusion-rag/issues/27) | Output auto-archiving to Project KB, RAG retrieval for workflow context loading | ✅ Integrated |
 | fusion-mlx | [#302](https://github.com/dahai80/fusion-mlx/issues/302) | Non-admin model management API, model capability tags, standalone embedding model config | ✅ Integrated |
+| fusion-studio | [#395](https://github.com/dahai80/fusion-studio/issues/395) | Workflow Canvas (React Flow) editor — consume FSB canvas-layout API | 🟡 Backend ready, frontend pending |
+| fusion-agent-studio | [#274](https://github.com/dahai80/fusion-agent-studio/issues/274) | Chat↔FSB integration — agent bind, NL workflow trigger, run-notify endpoint | 🟡 Backend ready, chat side pending |
 
 ## Upstream Integration Config
 
@@ -222,15 +239,24 @@ FSB communicates with upstream services via HTTP/JSON-RPC clients. All URLs are 
 | `FSB_FUSION_MLX_URL` | `http://localhost:11432` | fusion-mlx LLM API URL (via fusion-gateway) |
 | `FSB_FUSION_GATEWAY_URL` | `http://localhost:11444` | fusion-gateway service URL |
 | `FSB_FUSION_COWORK_URL` | `http://localhost:11437` | fusion-cowork RPC URL |
+| `FSB_FUSION_CHAT_URL` | `http://127.0.0.1:11460` | fusion-chat / agent service URL (agent bind + run-completion notify) |
 | `FSB_FUSION_RAG_URL` | `http://127.0.0.1:11436` | fusion-rag KB service URL |
 | `FSB_FUSION_RAG_API_KEY` | _(empty)_ | fusion-rag API Key (optional) |
 | `FSB_LLM_DEFAULT_MODEL` | `default` | Default LLM model name |
 | `FSB_EMBEDDING_MODEL` | `BGE-M3` | Default embedding model name |
 | `FSB_HTTP_TIMEOUT` | `10` | HTTP request timeout (seconds) |
-| `FSB_STANDALONE_MODE` | `true` | Standalone mode: when true, integration routes return stub responses AND tenant/auth middleware is skipped |
+| `FSB_STANDALONE_MODE` | `false` | Standalone mode: when true, integration routes return stub responses AND tenant/auth + rate-limit middleware is skipped. Default `false` for production safety; set `true` only for the dev/test fail-soft baseline. |
 | `FSB_FUSION_IDENTITY_URL` | `http://127.0.0.1:11470` | fusion-identity JWT verify endpoint (multi-tenant auth) |
 | `FSB_FUSION_IDENTITY_SERVICE_TOKEN` | _(empty)_ | service token gating `POST /api/v1/auth/verify` |
 | `FSB_AUTH_REQUIRE_JWT` | `true` | require valid JWT on all non-exempt routes (non-standalone mode only) |
+| `FSB_SECRET_KEY` | _(empty)_ | master key for secret encryption-at-rest (connector auth config + webhook secrets). Uses stdlib envelope encryption (scrypt KDF + HMAC-SHA256 keystream XOR + encrypt-then-MAC). When empty, secrets are stored in plaintext — set a strong random value in production. |
+| `FSB_RATE_LIMIT_CAPACITY` | `60` | per-tenant token-bucket capacity (max burst of in-flight requests) |
+| `FSB_RATE_LIMIT_REFILL` | `10` | per-tenant token-bucket refill rate (tokens/second) |
+| `FSB_MAX_BODY_BYTES` | `2097152` (2 MiB) | request body size ceiling for POST/PUT/PATCH (413 on overflow) |
+| `FSB_RUN_RETENTION_DAYS` | `30` | run history retention window; the hourly cleanup job deletes runs whose `endTime` is older than this and trims resolved pending tasks |
+| `FSB_SCHEDULER_ENABLED` | `true` | enable the in-process APScheduler cron dispatcher. Set `false` to run a replica in leader-only mode (no local scheduling) when multiple fsb instances share one DB |
+| `FSB_DB_PATH` | `fsb_data.db` | SQLite database file path (use an absolute path in production) |
+| `FSB_DB_POOL_SIZE` | `8` | aiosqlite connection pool size for concurrent DB access. Each connection runs `PRAGMA journal_mode=WAL` + `busy_timeout=5000`. Forced to 1 for `:memory:` DBs (aiosqlite isolates in-memory DBs per connection). |
 
 Integration points:
 
@@ -251,7 +277,56 @@ In non-standalone mode (`FSB_STANDALONE_MODE=false`), all `/workspace/{wsId}/*` 
 - The path `{wsId}` is bound to the verified tenant — accessing another tenant's workspace returns 403.
 - Revoked tokens are rejected with 401.
 
-In standalone mode (default) the auth middleware is skipped, so routes run unguarded — matching the fail-soft development/testing baseline.
+In standalone mode (`FSB_STANDALONE_MODE=true`) the auth middleware is skipped, so routes run unguarded — matching the fail-soft development/testing baseline. This is opt-in only; the production default is `false`.
+
+> **Production deployment:** the default `FSB_STANDALONE_MODE=false` enables auth + rate-limiting out of the box. You MUST provision `FSB_FUSION_IDENTITY_SERVICE_TOKEN` (and a reachable `FSB_FUSION_IDENTITY_URL`) and set a strong `FSB_SECRET_KEY` for secret encryption-at-rest. Set `FSB_STANDALONE_MODE=true` only for the dev/test fail-soft baseline — it must not be exposed publicly.
+
+### Security hardening
+
+- **Secret encryption-at-rest** — connector auth config and webhook secrets are encrypted before persistence using a stdlib-only envelope scheme (`engine/secret_crypto`): scrypt key derivation (N=16384, r=8, p=1, 64 MiB maxmem) → HMAC-SHA256 keystream XOR → encrypt-then-MAC, base64-wrapped with the `fsbenc1:` prefix. The master key is `FSB_SECRET_KEY`; when unset, secrets fall back to plaintext storage (logged). Secrets are decrypted only at use sites (gateway execute, webhook dispatch) and redacted (`***` / blanked fields) from all API responses. Tampered or wrong-key ciphertext returns empty and is logged, never raises.
+- **Rate limiting & body size** — a per-tenant token-bucket middleware (`FSB_RATE_LIMIT_CAPACITY` / `FSB_RATE_LIMIT_REFILL`) caps request rate (429 + `Retry-After` on overflow), and `FSB_MAX_BODY_BYTES` rejects oversized POST/PUT/PATCH bodies with 413. `/health`, `/docs`, `/openapi.json`, `/redoc` are exempt. Installed as the outermost middleware (runs before auth), active only in non-standalone mode.
+- **SSRF guard** — `api_call` skills and webhook registration/dispatch URLs are validated by a shared `engine/url_guard` helper: only `http`/`https` schemes are allowed, and the resolved host IP is rejected if it is loopback, private, link-local, reserved, multicast, or unspecified. This blocks cloud-metadata (`169.254.169.254`) and internal-service SSRF on both the skill-execution and webhook-dispatch paths. `api_call` execution and webhook dispatch additionally **pin the resolved IP** for the outbound request (original host preserved via the `Host` header), closing the DNS-rebinding TOCTOU window between validation and connection.
+- **EventBus tenant scoping** — events carrying a `workspaceId` only match subscriptions owned by that workspace (SQL `wsId` predicate + client-side defense-in-depth filter), preventing cross-tenant workflow fan-out. Events without a `workspaceId` are stored but never broadcast (cross-tenant fan-out disabled). A 60s dedup window and per-event-type depth limit (max 5) prevent event storms and recursive trigger loops.
+- **DB hardening** — SQLite runs in WAL mode with `busy_timeout=5000`; `list` query params are clamped to a 200-row page ceiling (negatives rejected); workspace cascade delete is atomic (single transaction via explicit `BEGIN IMMEDIATE`); `INSERT … ON CONFLICT` upsert preserves indexed sibling columns; corrupt JSON blobs are logged and skipped per-row rather than failing the whole query. The DB path is overridable via `FSB_DB_PATH` (use an absolute path in production). Filtered queries (`title`, `status`, `eventType`, `enabled`) are backed by `json_extract` expression indexes. Schema is versioned via `PRAGMA user_version` with a forward-only migration registry — new indexes apply automatically on startup without a manual migration step.
+- **Workspace tenant binding** — in non-standalone mode, workspace create/import bind the workspace id to the caller's tenant, and list is scoped to the caller tenant (403 on mismatch).
+- **Canvas-layout validation** — `PUT .../canvas-layout` rejects non-finite (`NaN`/`Infinity`) and non-numeric positions, and reports unknown node ids in the response.
+
+### External route auth guard
+
+The `/external/*` routes (workflow trigger/status, event subscriptions, webhooks) are also tenant-guarded in non-standalone mode:
+
+- Workflow trigger/status resolve the workflow's owning workspace and require the caller tenant to own it (403 otherwise).
+- Event posting with a `workspaceId` requires tenant ownership of that workspace.
+- Subscription and webhook create/delete are **admin-only** (JWT `role` must be `admin` or `owner`).
+- Subscription/webhook list reads require tenant ownership of the queried workspace.
+- A router-level `require_tenant_present` dependency enforces that every `/external/*` request carries a tenant context in non-standalone mode, so a handler that forgets an inline ownership check cannot leak cross-tenant data.
+
+### Production deployment & concurrency
+
+- **Shared HTTP connection pool** — all upstream clients (`llm`, `gateway`, `chat`, `artifact`, `cowork`, `rag`, `webhook`) share a single `httpx.AsyncClient` pool (`engine/http_pool`, 50 max connections / 20 keepalive) created at startup and closed on shutdown. Per-request `timeout=` is still passed for long-running calls (embeddings, batch upload, RAG ask) so the shared default does not erase their longer budgets. This eliminates the per-call socket churn and connection-limit-exhaustion risk of the old `async with httpx.AsyncClient()` per request pattern.
+- **JWT verify cache** — JWT verification against fusion-identity is cached in-process for 30s (max 1024 entries, FIFO eviction) to mitigate the upstream `verify_jwt` being a synchronous `httpx.post` inside the async middleware. A hot token hits the cache as a pure dict lookup; the blocking call only fires on cache miss or expiry. The root cause (sync verify in async middleware) is tracked as an upstream fusion-core issue.
+- **Stale-run reaper** — on startup, any run left in `RUNNING` status (killed mid-execution by a crash/restart) is paginated, marked `FAILED` with an `endTime` + `reaped: stale RUNNING run after restart` error, and persisted. Without this a crashed run stays `RUNNING` forever and blocks UI/retention logic.
+- **Run retention cleanup** — an hourly job (`fsb_retention_cleanup`) deletes runs whose `endTime` is older than `FSB_RUN_RETENTION_DAYS` (default 30), prunes resolved pending tasks (approved/denied), and trims events to a per-workspace ceiling. An initial cleanup also runs at startup. This bounds DB growth in long-running deployments.
+- **CAS resume safety** — `resume(run_id, decision)` uses a compare-and-swap `UPDATE … WHERE json_extract(data,'$.status')='paused'` so two concurrent resume callers cannot both advance the run; the loser logs a lost-race warning and returns without double-executing the post-gate branch. The gate node type is re-validated before resume (a workflow edited to remove the gate fails fast rather than executing the wrong node).
+- **Scheduler reconciliation** — cron jobs are rebuilt from persisted workflows on startup with an expected-vs-registered counter; a mismatch logs an error rather than silently losing schedules. In multi-instance deployments set `FSB_SCHEDULER_ENABLED=false` on non-leader replicas to avoid duplicate cron firing.
+- **DB connection pool** — the Store maintains a pool of `FSB_DB_POOL_SIZE` (default 8) aiosqlite connections (an `asyncio.Queue` of idle connections with `acquire()`/`release()`). Every DB operation runs inside `async with store.acquire()`, so concurrent workflows + API reads no longer serialize on a single connection. Each connection is opened with `PRAGMA journal_mode=WAL` + `synchronous=NORMAL` + `busy_timeout=5000`. `:memory:` DBs force pool_size=1 (aiosqlite isolates in-memory DBs per connection). `/health` and `/health/ready` probe the pool via `is_healthy()` (`SELECT 1`).
+- **Incremental run-trace persistence** — node execution traces are stored in a dedicated `run_traces` table (schema v3), not re-serialized into the run blob on every checkpoint. The runner's `_checkpoint(run, trace)` writes a constant-size run blob (`nodeTrace` stripped to `[]`) plus one O(1) `append_run_trace` row per node, eliminating the O(N²) write amplification of re-serializing the whole growing `RunInstance` per node. `get_run` / `list_runs` re-hydrate `nodeTrace` from the table (batched `WHERE runId IN (...)` for list). Workspace deletion and run retention cascade-delete traces atomically with their runs.
+
+On startup the app lifespan seeds a builtin workspace (`fsb_ws_builtin`) with the 15 built-in skills and 15 built-in workflows (stable IDs, idempotent), then starts the APScheduler `AsyncIOScheduler` and registers every existing workflow whose `schedule.type == cron`. New cron schedules set via `/workflow/{wfId}/schedule` are registered live; schedule deletion unregisters the job. Failures degrade gracefully (logged, non-fatal).
+
+### Workflow Canvas layout (G10)
+
+Each `WorkflowNode` carries a `position: {x, y}` field for visual layout. `PUT /workspace/{wsId}/workflow/{wfId}/canvas-layout` (body `{"layout": {nodeId: {x, y}}}`) merges node positions onto the graph for persistence by the visual editor. The React Flow frontend is tracked in [fusion-studio#395](https://github.com/dahai80/fusion-studio/issues/395).
+
+### Chat & Agent integration (G11)
+
+FSB exposes a Chat↔FSB bidirectional integration (PRD §14.5 / §14.2):
+
+- `POST /workspace/{wsId}/agent/bind` / `/unbind` — bind/unbind a chat agent to the workspace (`bindAgentId`), synced to the chat service upstream. Admin-only in non-standalone mode.
+- `POST /workspace/{wsId}/chat/run` — natural-language query → intent match → workflow run (chat-driven orchestration).
+- On run completion, if the workspace has a bound agent, FSB posts `run.completed` to `{FSB_FUSION_CHAT_URL}/api/v1/chat/notify` (fail-soft).
+
+The Agent Studio / Chat side (notify endpoint, bind/unbind endpoints, chat UI) is tracked in [fusion-agent-studio#274](https://github.com/dahai80/fusion-agent-studio/issues/274).
 
 ## fusion-studio Plugin
 

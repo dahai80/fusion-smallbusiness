@@ -1,19 +1,22 @@
 import logging
+import uuid
 from typing import Any
 
 import httpx
 
 from ..config import fsb_config
+from .http_pool import acquire_client
 
 logger = logging.getLogger(__name__)
 
+_PROCESS_PREFIX = uuid.uuid4().hex[:8]
 _RPC_ID_COUNTER = 0
 
 
-def _next_rpc_id() -> int:
+def _next_rpc_id() -> str:
     global _RPC_ID_COUNTER
     _RPC_ID_COUNTER += 1
-    return _RPC_ID_COUNTER
+    return f"{_PROCESS_PREFIX}-{_RPC_ID_COUNTER}"
 
 
 async def _rpc_call(method: str, params: dict) -> dict[str, Any]:
@@ -25,7 +28,7 @@ async def _rpc_call(method: str, params: dict) -> dict[str, Any]:
         "params": params,
     }
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             result = resp.json()

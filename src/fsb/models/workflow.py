@@ -25,6 +25,7 @@ class WorkflowNode(BaseModel):
     id: str
     type: NodeType
     config: NodeConfig = Field(default_factory=NodeConfig)
+    position: dict[str, float] = Field(default_factory=dict)
 
 
 class WorkflowEdge(BaseModel):

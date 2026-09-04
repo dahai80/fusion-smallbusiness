@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from .common import ActionSchema, SkillType, gen_id, utc_now
+from .common import ActionSchema, ApiCallConfig, SkillType, gen_id, utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ class SkillCreate(BaseModel):
     inputSchema: ActionSchema = Field(default_factory=ActionSchema)
     outputFormat: str = "json"
     enabled: bool = True
+    apiConfig: ApiCallConfig = Field(default_factory=ApiCallConfig)
 
 
 class SkillUpdate(BaseModel):
@@ -25,6 +26,7 @@ class SkillUpdate(BaseModel):
     inputSchema: ActionSchema | None = None
     outputFormat: str | None = None
     enabled: bool | None = None
+    apiConfig: ApiCallConfig | None = None
 
 
 class Skill(BaseModel):
@@ -37,4 +39,5 @@ class Skill(BaseModel):
     inputSchema: ActionSchema = Field(default_factory=ActionSchema)
     outputFormat: str = "json"
     enabled: bool = True
+    apiConfig: ApiCallConfig = Field(default_factory=ApiCallConfig)
     createTime: datetime = Field(default_factory=utc_now)
