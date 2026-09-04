@@ -27,6 +27,14 @@ class FSBConfig:
     MAX_BODY_BYTES: int = int(os.environ.get("FSB_MAX_BODY_BYTES", str(2 * 1024 * 1024)))
     SECRET_KEY: str = os.environ.get("FSB_SECRET_KEY", "")
     RUN_RETENTION_DAYS: int = int(os.environ.get("FSB_RUN_RETENTION_DAYS", "30"))
+    DB_BACKEND: str = os.environ.get("FSB_DB_BACKEND", "sqlite")
+    DB_PATH: str = os.environ.get("FSB_DB_PATH", "fsb_data.db")
+    DB_POOL_SIZE: int = int(os.environ.get("FSB_DB_POOL_SIZE", "8"))
+    PG_DSN: str = os.environ.get("FSB_PG_DSN", "")
+    PG_POOL_SIZE: int = int(os.environ.get("FSB_PG_POOL_SIZE", "10"))
+    SCHEDULER_LEADER_TTL: int = int(os.environ.get("FSB_SCHEDULER_LEADER_TTL", "30"))
+    EVENT_DEDUP_TTL: int = int(os.environ.get("FSB_EVENT_DEDUP_TTL", "120"))
+    RATE_LIMIT_DISTRIBUTED: bool = os.environ.get("FSB_RATE_LIMIT_DISTRIBUTED", "false").lower() in ("true", "1", "yes")
 
     _FIELD_DEFAULTS: ClassVar[dict] = {
         "ARTIFACTS_ENGINE_URL": ("FSB_ARTIFACTS_ENGINE_URL", "http://127.0.0.1:11451", str),
@@ -50,6 +58,14 @@ class FSBConfig:
         "MAX_BODY_BYTES": ("FSB_MAX_BODY_BYTES", str(2 * 1024 * 1024), int),
         "SECRET_KEY": ("FSB_SECRET_KEY", "", str),
         "RUN_RETENTION_DAYS": ("FSB_RUN_RETENTION_DAYS", "30", int),
+        "DB_BACKEND": ("FSB_DB_BACKEND", "sqlite", str),
+        "DB_PATH": ("FSB_DB_PATH", "fsb_data.db", str),
+        "DB_POOL_SIZE": ("FSB_DB_POOL_SIZE", "8", int),
+        "PG_DSN": ("FSB_PG_DSN", "", str),
+        "PG_POOL_SIZE": ("FSB_PG_POOL_SIZE", "10", int),
+        "SCHEDULER_LEADER_TTL": ("FSB_SCHEDULER_LEADER_TTL", "30", int),
+        "EVENT_DEDUP_TTL": ("FSB_EVENT_DEDUP_TTL", "120", int),
+        "RATE_LIMIT_DISTRIBUTED": ("FSB_RATE_LIMIT_DISTRIBUTED", "false", "bool"),
     }
 
     def reload(self) -> None:

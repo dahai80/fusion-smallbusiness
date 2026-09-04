@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS run_traces (
 CREATE INDEX IF NOT EXISTS idx_run_traces_run ON run_traces(runId);
 """
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 
 _MIGRATIONS: list[tuple[int, str]] = [
     (
@@ -128,6 +128,28 @@ _MIGRATIONS: list[tuple[int, str]] = [
                 "    data TEXT NOT NULL",
                 ");",
                 "CREATE INDEX IF NOT EXISTS idx_run_traces_run ON run_traces(runId);",
+            ]
+        ),
+    ),
+    (
+        4,
+        "\n".join(
+            [
+                "CREATE TABLE IF NOT EXISTS scheduler_lease (",
+                "    holder TEXT PRIMARY KEY,",
+                "    expires_at TEXT NOT NULL",
+                ");",
+                "CREATE TABLE IF NOT EXISTS event_dedup (",
+                "    event_id TEXT PRIMARY KEY,",
+                "    ws_id TEXT NOT NULL,",
+                "    seen_at TEXT NOT NULL",
+                ");",
+                "CREATE INDEX IF NOT EXISTS idx_event_dedup_seen ON event_dedup(seen_at);",
+                "CREATE TABLE IF NOT EXISTS rate_limit_buckets (",
+                "    tenant_id TEXT PRIMARY KEY,",
+                "    tokens REAL NOT NULL,",
+                "    last_refill TEXT NOT NULL",
+                ");",
             ]
         ),
     ),
@@ -696,3 +718,109 @@ class Store:
                 logger.exception("retention cleanup failed, rolled back")
                 raise
         return deleted
+
+    # ---- distributed primitives ----
+
+    async def try_acquire_leader(self, holder: str, ttl_seconds: int) -> bool:
+        from datetime import UTC, datetime, timedelta
+
+        expires = (datetime.now(UTC) + timedelta(seconds=ttl_seconds)).isoformat()
+        async with self.acquire() as db:
+            cur = await db.execute("SELECT expires_at FROM scheduler_lease WHERE holder = ?", (holder,))
+            row = await cur.fetchone()
+            if row:
+                await db.execute("UPDATE scheduler_lease SET expires_at = ? WHERE holder = ?", (expires, holder))
+                await db.commit()
+                return True
+            try:
+                await db.execute("INSERT INTO scheduler_lease (holder, expires_at) VALUES (?, ?)", (holder, expires))
+                await db.commit()
+                return True
+            except Exception as e:
+                logger.warning("leader acquire race lost: %s", e)
+                return False
+
+    async def renew_leader(self, holder: str, ttl_seconds: int) -> bool:
+        from datetime import UTC, datetime, timedelta
+
+        expires = (datetime.now(UTC) + timedelta(seconds=ttl_seconds)).isoformat()
+        async with self.acquire() as db:
+            cur = await db.execute("UPDATE scheduler_lease SET expires_at = ? WHERE holder = ?", (expires, holder))
+            await db.commit()
+            return cur.rowcount > 0
+
+    async def is_leader(self, holder: str) -> bool:
+        from datetime import UTC, datetime
+
+        now = datetime.now(UTC).isoformat()
+        async with self.acquire() as db:
+            cur = await db.execute("SELECT expires_at FROM scheduler_lease WHERE holder = ?", (holder,))
+            row = await cur.fetchone()
+        return row is not None and row["expires_at"] > now
+
+    async def release_leader(self, holder: str):
+        async with self.acquire() as db:
+            await db.execute("DELETE FROM scheduler_lease WHERE holder = ?", (holder,))
+            await db.commit()
+
+    async def event_seen(self, event_id: str, ws_id: str, ttl_seconds: int) -> bool:
+        from datetime import UTC, datetime, timedelta
+
+        now = datetime.now(UTC)
+        async with self.acquire() as db:
+            cur = await db.execute("SELECT seen_at FROM event_dedup WHERE event_id = ?", (event_id,))
+            row = await cur.fetchone()
+            if row:
+                await db.execute("UPDATE event_dedup SET seen_at = ? WHERE event_id = ?", (now.isoformat(), event_id))
+                await db.commit()
+                return True
+            try:
+                await db.execute(
+                    "INSERT INTO event_dedup (event_id, ws_id, seen_at) VALUES (?, ?, ?)",
+                    (event_id, ws_id, now.isoformat()),
+                )
+                await db.commit()
+                await db.execute(
+                    "DELETE FROM event_dedup WHERE seen_at < ?",
+                    ((now - timedelta(seconds=ttl_seconds)).isoformat(),),
+                )
+                await db.commit()
+                return False
+            except Exception as e:
+                logger.warning("event dedup race: %s", e)
+                return True
+
+    async def rate_limit_consume(self, tenant_id: str, capacity: int, refill_rate: int) -> bool:
+        from datetime import UTC, datetime
+
+        now = datetime.now(UTC)
+        async with self.acquire() as db:
+            cur = await db.execute(
+                "SELECT tokens, last_refill FROM rate_limit_buckets WHERE tenant_id = ?", (tenant_id,)
+            )
+            row = await cur.fetchone()
+            if row is None:
+                tokens = float(capacity)
+                last_refill = now.isoformat()
+                await db.execute(
+                    "INSERT INTO rate_limit_buckets (tenant_id, tokens, last_refill) VALUES (?, ?, ?)",
+                    (tenant_id, tokens, last_refill),
+                )
+            else:
+                last_refill = datetime.fromisoformat(row["last_refill"])
+                elapsed = (now - last_refill).total_seconds()
+                tokens = min(float(capacity), float(row["tokens"]) + elapsed * refill_rate)
+            if tokens < 1.0:
+                await db.execute(
+                    "UPDATE rate_limit_buckets SET tokens = ?, last_refill = ? WHERE tenant_id = ?",
+                    (tokens, now.isoformat(), tenant_id),
+                )
+                await db.commit()
+                return False
+            tokens -= 1.0
+            await db.execute(
+                "UPDATE rate_limit_buckets SET tokens = ?, last_refill = ? WHERE tenant_id = ?",
+                (tokens, now.isoformat(), tenant_id),
+            )
+            await db.commit()
+            return True

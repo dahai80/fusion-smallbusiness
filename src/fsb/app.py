@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from .auth import verify_jwt_with_identity
 from .config import fsb_config
-from .db.store import Store
+from .db import make_store
 from .routes import (
     chat,
     connector,
@@ -42,7 +42,7 @@ def _install_auth(app: FastAPI) -> None:
 
 class AppState:
     def __init__(self):
-        self.store: Store = Store()
+        self.store = make_store()
         self.scheduler = None
 
 
@@ -77,6 +77,7 @@ async def lifespan(application: FastAPI):
         else:
             app_state.scheduler = WorkflowScheduler(app_state.store)
             app_state.scheduler.start()
+            await app_state.scheduler.ensure_leadership()
             await _register_existing_cron_jobs(app_state.scheduler, app_state.store)
             logger.info("workflow scheduler started")
     except Exception as e:
@@ -261,6 +262,8 @@ app.add_middleware(
     capacity=fsb_config.RATE_LIMIT_CAPACITY,
     refill_rate=fsb_config.RATE_LIMIT_REFILL,
     max_body_bytes=fsb_config.MAX_BODY_BYTES,
+    store=app_state.store,
+    distributed=fsb_config.RATE_LIMIT_DISTRIBUTED,
 )
 logger.info(
     "rate limit middleware installed: capacity=%s refill=%s max_body=%s",

@@ -256,6 +256,12 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 | `FSB_SCHEDULER_ENABLED` | `true` | 启用进程内 APScheduler cron 调度。设为 `false` 可让副本以 leader-only 模式运行（不本地调度），适用于多实例共享同一 DB 的场景 |
 | `FSB_DB_PATH` | `fsb_data.db` | SQLite 数据库文件路径（生产环境请用绝对路径） |
 | `FSB_DB_POOL_SIZE` | `8` | aiosqlite 连接池大小，支持并发 DB 访问。每个连接执行 `PRAGMA journal_mode=WAL` + `busy_timeout=5000`。`:memory:` DB 强制为 1（aiosqlite 内存库按连接隔离） |
+| `FSB_DB_BACKEND` | `sqlite` | 存储后端选择器 —— `sqlite`（默认，单节点）或 `postgres`（多节点；需配 `FSB_PG_DSN`）。选 `postgres` 时，10 张领域表 + `run_traces` + 三张分布式原语表均以 JSONB 列 + 表达式索引创建 |
+| `FSB_PG_DSN` | `""` | asyncpg 连接 DSN（如 `postgresql://user:pass@host:5432/db`）。`FSB_DB_BACKEND=postgres` 时必填 |
+| `FSB_PG_POOL_SIZE` | `10` | Postgres 后端的 asyncpg 连接池大小 |
+| `FSB_SCHEDULER_LEADER_TTL` | `30` | 调度器 leader 租约 TTL（秒）。仅租约持有者执行 cron 触发的工作流；副本在过期后重新竞争。由 `scheduler_lease` 表支撑 |
+| `FSB_EVENT_DEDUP_TTL` | `120` | EventBus 分布式去重窗口（秒）。启用 Postgres 后端（或 `FSB_RATE_LIMIT_DISTRIBUTED=true`）时，事件 ID 通过 `event_dedup` 表跨节点去重，替代进程内字典 |
+| `FSB_RATE_LIMIT_DISTRIBUTED` | `false` | 为 `true` 时，限流中间件从 `rate_limit_buckets` 表消费令牌（跨节点共享），而非每进程内存桶。DB 调用失败则回退本地桶 |
 
 集成点说明：
 
@@ -310,6 +316,17 @@ FSB 通过 HTTP/JSON-RPC 客户端与上游服务通信，所有 URL 通过环�
 - **调度器对账** —— 启动时从持久化工作流重建 cron 任务，并比对 expected-vs-registered 计数；不匹配记 error 而非静默丢失调度。多实例部署时在非 leader 副本上设置 `FSB_SCHEDULER_ENABLED=false` 以避免重复触发 cron。
 - **DB 连接池** —— Store 维护 `FSB_DB_POOL_SIZE`（默认 8）个 aiosqlite 连接的池（`asyncio.Queue` 存放空闲连接，`acquire()`/`release()`）。每个 DB 操作都在 `async with store.acquire()` 内执行，并发工作流 + API 读取不再串行在单一连接上。每个连接以 `PRAGMA journal_mode=WAL` + `synchronous=NORMAL` + `busy_timeout=5000` 打开。`:memory:` DB 强制 pool_size=1（aiosqlite 内存库按连接隔离）。`/health` 与 `/health/ready` 通过 `is_healthy()`（`SELECT 1`）探测连接池。
 - **增量 run-trace 持久化** —— 节点执行 trace 存入独立的 `run_traces` 表（schema v3），而非每次 checkpoint 都把整段重序列化进 run blob。Runner 的 `_checkpoint(run, trace)` 写入常量大小的 run blob（`nodeTrace` 置空 `[]`）外加每节点一行 O(1) 的 `append_run_trace`，消除"每节点重序列化整个不断增长的 `RunInstance`"的 O(N²) 写放大。`get_run` / `list_runs` 从该表重新水合 `nodeTrace`（list 用 `WHERE runId IN (...)` 批量查询）。工作区删除与 run 留存清理在原子事务中级联删除对应 trace。
+
+### 多节点 / 水平扩展
+
+水平扩展部署（负载均衡后多副本 fsb）下，SQLite 无法跨写入者共享，故需启用 **Postgres 后端**：
+
+1. **设置后端** —— `FSB_DB_BACKEND=postgres` + `FSB_PG_DSN=postgresql://user:pass@pg-host:5432/fsb`。启动时 `make_store()`（`db/__init__.py`）按后端选择；`PostgresStore`（asyncpg 连接池）镜像完整 `Store` API（10 张领域表、`run_traces`、`cas_run_status`、`find_matching_subscriptions`、`find_webhooks_for_event`、`cleanup_old_runs`），使用 JSONB 列与 `data->>'field'` 表达式索引。319 个 SQLite 测试保留为单节点基线；9 个 Postgres 集成测试（`tests/test_pg_store.py`）对活动 `fsb_test_autotest` 库运行（自动建/删库，无本地 Postgres 时跳过）。
+2. **调度器 leader 选举** —— 仅一个副本应触发 cron 工作流。每个实例在 `scheduler_lease` 表持租约（`try_acquire_leader` / `renew_leader` / `is_leader` / `release_leader`）。启动时 `ensure_leadership()` 获取租约并按 `TTL/3` 调度续租任务；`_run_scheduled_workflow` 在非 leader 上提前返回。`FSB_SCHEDULER_LEADER_TTL`（默认 30s）控制过期。租约在进程崩溃后依然存活（已死持有者的行自然过期，另一副本重新获取）。
+3. **EventBus 分布式去重** —— 模块级去重字典仅进程内有效。启用 Postgres 后端（或 `FSB_RATE_LIMIT_DISTRIBUTED=true`）时，`EventBus._is_duplicate` 委托给 `store.event_seen(eventId, wsId, TTL)`，由 `event_dedup` 表支撑（全局主键 + `seen_at` 清理扫描）。使副本 A 触发的事件在副本 B 跳过重复处理。DB 失败时回退内存字典。
+4. **分布式限流** —— `FSB_RATE_LIMIT_DISTRIBUTED=true` 时，限流中间件从 `store.rate_limit_consume(tenant_key, capacity, refill)` 消费令牌，由 `rate_limit_buckets` 表支撑（按租户令牌桶，按 `last_refill` 起的墙钟时间补充）。跨副本给出一致的全局限流，而非 N 个独立的每进程桶。DB 失败时回退本地内存桶。
+
+三个原语在**两种**后端均实现（SQLite 通过迁移 v4 获得相同表结构，单节点部署也得到该 API 表面），且在 standalone 单节点模式下默认为空操作 —— 仅当启用 Postgres 后端或对应 `FSB_*_DISTRIBUTED` 开关时激活。
 
 应用启动时在 lifespan 中播种内置工作区（`fsb_ws_builtin`），写入 15 个内置 Skill 和 15 个内置 Workflow（稳定 ID、幂等），随后启动 APScheduler `AsyncIOScheduler` 并注册所有 `schedule.type == cron` 的现存工作流。通过 `/workflow/{wfId}/schedule` 设置的新 cron 调度会实时注册；删除调度则注销任务。失败优雅降级（仅记日志，非致命）。
 

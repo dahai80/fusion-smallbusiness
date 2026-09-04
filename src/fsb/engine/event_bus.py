@@ -1,5 +1,6 @@
 import logging
 
+from ..config import fsb_config
 from ..db.store import Store
 from ..models.common import TriggerType
 from ..models.event import EventTrigger
@@ -16,7 +17,13 @@ class EventBus:
     def __init__(self, store: Store):
         self.store = store
 
-    async def publish(self, event: EventTrigger) -> list[dict]:
+    async def _is_duplicate(self, event: EventTrigger) -> bool:
+        if fsb_config.DB_BACKEND == "postgres" or fsb_config.RATE_LIMIT_DISTRIBUTED:
+            try:
+                ttl = max(60, fsb_config.EVENT_DEDUP_TTL)
+                return await self.store.event_seen(event.eventId, event.workspaceId or "_global", ttl)
+            except Exception as e:
+                logger.warning("distributed dedup failed, falling back to in-memory: %s", e)
         import time
 
         now = time.monotonic()
@@ -24,9 +31,14 @@ class EventBus:
         for k in stale:
             _recent_event_ids.pop(k, None)
         if event.eventId in _recent_event_ids:
+            return True
+        _recent_event_ids[event.eventId] = now
+        return False
+
+    async def publish(self, event: EventTrigger) -> list[dict]:
+        if await self._is_duplicate(event):
             logger.warning("event deduplicated (already processed): %s", event.eventId)
             return []
-        _recent_event_ids[event.eventId] = now
 
         await self.store.save_event(event.eventId, event.workspaceId, event.model_dump(mode="json"))
         logger.info(
