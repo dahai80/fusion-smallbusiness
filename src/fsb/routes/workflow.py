@@ -22,6 +22,12 @@ def get_store() -> Store:
     return app_state.store
 
 
+def get_scheduler():
+    from ..app import app_state
+
+    return app_state.scheduler
+
+
 @router.get("", response_model=list[Workflow])
 async def list_workflows(wsId: str, offset: int = 0, limit: int = 100):
     store = get_store()
@@ -121,6 +127,15 @@ async def set_schedule(wsId: str, wfId: str, body: dict):
     wf.updateTime = utc_now()
     await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))
     logger.info("workflow schedule set: %s type=%s cron=%s", wfId, sched.type, sched.cron)
+
+    scheduler = get_scheduler()
+    if scheduler:
+        if sched.type == ScheduleType.CRON and sched.cron:
+            await scheduler.register(wsId, wfId)
+        else:
+            await scheduler.unregister(wsId, wfId)
+    else:
+        logger.warning("scheduler not available, schedule persisted but not registered: %s", wfId)
     return {"success": True, "schedule": sched.model_dump(mode="json")}
 
 
@@ -137,6 +152,9 @@ async def delete_schedule(wsId: str, wfId: str, scheduleId: str):
     wf.schedule = ScheduleConfig(type=ScheduleType.MANUAL)
     wf.updateTime = utc_now()
     await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))
+    scheduler = get_scheduler()
+    if scheduler:
+        await scheduler.unregister(wsId, wfId)
     logger.info("workflow schedule deleted: %s", wfId)
     return {"success": True}
 
@@ -163,3 +181,40 @@ async def export_workflow(wsId: str, wfId: str):
         raise HTTPException(status_code=404, detail="workflow not found")
     logger.info("workflow exported: %s", wfId)
     return data
+
+
+@router.put("/{wfId}/canvas-layout")
+async def update_canvas_layout(wsId: str, wfId: str, body: dict):
+    import math
+
+    store = get_store()
+    data = await store.get_workflow(wfId)
+    if not data or data.get("workspaceId") != wsId:
+        raise HTTPException(status_code=404, detail="workflow not found")
+    wf = Workflow(**data)
+    layout = body.get("layout", {})
+    if not isinstance(layout, dict):
+        raise HTTPException(status_code=400, detail="layout must be a dict of {nodeId: {x, y}}")
+    valid_node_ids = {n.id for n in wf.graphDefinition.nodes}
+    unknown = []
+    for nid in layout:
+        if nid not in valid_node_ids:
+            unknown.append(nid)
+    updated = 0
+    for node in wf.graphDefinition.nodes:
+        pos = layout.get(node.id)
+        if not isinstance(pos, dict):
+            continue
+        try:
+            x = float(pos.get("x", 0.0))
+            y = float(pos.get("y", 0.0))
+        except (TypeError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=f"node {node.id} position not numeric: {e}") from e
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise HTTPException(status_code=400, detail=f"node {node.id} position must be finite (x={x}, y={y})")
+        node.position = {"x": x, "y": y}
+        updated += 1
+    wf.updateTime = utc_now()
+    await store.save_workflow(wf.wfId, wsId, wf.model_dump(mode="json"))
+    logger.info("canvas layout updated: %s nodes=%d unknown=%d", wfId, updated, len(unknown))
+    return {"success": True, "updated": updated, "unknownNodeIds": unknown, "wfId": wfId}

@@ -768,7 +768,13 @@ class TestWebhookDispatcher:
     @pytest.mark.asyncio
     async def test_dispatch_success(self):
         mock_cm, _ = _make_mock_client("post", {"ok": True}, status_code=200)
-        with patch("fsb.engine.webhook_dispatcher.httpx.AsyncClient", return_value=mock_cm):
+        with (
+            patch(
+                "fsb.engine.webhook_dispatcher.resolve_pinned_url",
+                return_value=("https://example.com/hook", "example.com"),
+            ),
+            patch("fsb.engine.webhook_dispatcher.acquire_client", return_value=mock_cm),
+        ):
             from fsb.engine.webhook_dispatcher import dispatch_webhook
 
             result = await dispatch_webhook(
@@ -781,7 +787,13 @@ class TestWebhookDispatcher:
     @pytest.mark.asyncio
     async def test_dispatch_with_secret(self):
         mock_cm, _ = _make_mock_client("post", {"ok": True}, status_code=200)
-        with patch("fsb.engine.webhook_dispatcher.httpx.AsyncClient", return_value=mock_cm):
+        with (
+            patch(
+                "fsb.engine.webhook_dispatcher.resolve_pinned_url",
+                return_value=("https://example.com/hook", "example.com"),
+            ),
+            patch("fsb.engine.webhook_dispatcher.acquire_client", return_value=mock_cm),
+        ):
             from fsb.engine.webhook_dispatcher import dispatch_webhook
 
             result = await dispatch_webhook(
@@ -796,7 +808,13 @@ class TestWebhookDispatcher:
     @pytest.mark.asyncio
     async def test_dispatch_server_error(self):
         mock_cm, _ = _make_mock_client("post", {"error": "bad"}, status_code=500)
-        with patch("fsb.engine.webhook_dispatcher.httpx.AsyncClient", return_value=mock_cm):
+        with (
+            patch(
+                "fsb.engine.webhook_dispatcher.resolve_pinned_url",
+                return_value=("https://example.com/hook", "example.com"),
+            ),
+            patch("fsb.engine.webhook_dispatcher.acquire_client", return_value=mock_cm),
+        ):
             from fsb.engine.webhook_dispatcher import dispatch_webhook
 
             result = await dispatch_webhook(
@@ -809,7 +827,13 @@ class TestWebhookDispatcher:
     @pytest.mark.asyncio
     async def test_dispatch_connection_error(self):
         mock_cm = _make_http_error_client("post")
-        with patch("fsb.engine.webhook_dispatcher.httpx.AsyncClient", return_value=mock_cm):
+        with (
+            patch(
+                "fsb.engine.webhook_dispatcher.resolve_pinned_url",
+                return_value=("https://example.com/hook", "example.com"),
+            ),
+            patch("fsb.engine.webhook_dispatcher.acquire_client", return_value=mock_cm),
+        ):
             from fsb.engine.webhook_dispatcher import dispatch_webhook
 
             result = await dispatch_webhook(
@@ -833,7 +857,13 @@ class TestWebhookDispatcher:
     @pytest.mark.asyncio
     async def test_dispatch_generic_exception(self):
         mock_cm = _make_generic_error_client("post")
-        with patch("fsb.engine.webhook_dispatcher.httpx.AsyncClient", return_value=mock_cm):
+        with (
+            patch(
+                "fsb.engine.webhook_dispatcher.resolve_pinned_url",
+                return_value=("https://example.com/hook", "example.com"),
+            ),
+            patch("fsb.engine.webhook_dispatcher.acquire_client", return_value=mock_cm),
+        ):
             from fsb.engine.webhook_dispatcher import dispatch_webhook
 
             result = await dispatch_webhook(
@@ -841,4 +871,15 @@ class TestWebhookDispatcher:
                 "run.completed",
                 {"runId": "r1"},
             )
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_dispatch_ssrf_loopback_rejected(self):
+        from fsb.engine.webhook_dispatcher import dispatch_webhook
+
+        result = await dispatch_webhook(
+            {"webhookId": "wh1", "url": "http://127.0.0.1:11490/secret"},
+            "run.completed",
+            {"runId": "r1"},
+        )
         assert result is False

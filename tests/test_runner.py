@@ -79,6 +79,7 @@ def _mock_store(wf_data=None, ws_data=None, connector_data=None, skill_data=None
     store.get_workflow.return_value = wf_data
     store.get_workspace.return_value = ws_data
     store.get_connector.return_value = connector_data
+    store.list_connectors.return_value = [connector_data] if connector_data else []
     store.get_skill.return_value = skill_data
     store.save_run = AsyncMock()
     store.save_task = AsyncMock()
@@ -236,7 +237,9 @@ class TestWorkflowRunnerConnectorExecution:
             }
         )
         ws_data = {"wsId": "ws1", "variables": []}
-        store = _mock_store(wf_data=wf_data, ws_data=ws_data, connector_data={"data": {"connectionId": "conn1"}})
+        store = _mock_store(
+            wf_data=wf_data, ws_data=ws_data, connector_data={"connectorKey": "qbo", "connectionId": "conn1"}
+        )
         runner = WorkflowRunner(store)
 
         with patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec:
@@ -245,6 +248,40 @@ class TestWorkflowRunnerConnectorExecution:
         assert run.status == RunStatus.COMPLETED
         conn_trace = next(t for t in run.nodeTrace if t.nodeId == "n_conn")
         assert conn_trace.status == "success"
+        mock_exec.assert_called_once()
+        _, kwargs = mock_exec.call_args
+        assert kwargs.get("connection_id") == "conn1"
+
+    @pytest.mark.asyncio
+    async def test_connector_no_connection_propagates_empty(self):
+        wf_data = _wf_from_graph(
+            {
+                "nodes": [
+                    {"id": "n_start", "type": "START_NODE"},
+                    {
+                        "id": "n_conn",
+                        "type": "CONNECTOR_NODE",
+                        "config": {"connectorId": "qbo", "action": "query", "permission": "read"},
+                    },
+                    {"id": "n_end", "type": "END_NODE"},
+                ],
+                "edges": [
+                    {"source": "n_start", "target": "n_conn"},
+                    {"source": "n_conn", "target": "n_end"},
+                ],
+                "entryNode": "n_start",
+            }
+        )
+        ws_data = {"wsId": "ws1", "variables": []}
+        store = _mock_store(wf_data=wf_data, ws_data=ws_data)
+        runner = WorkflowRunner(store)
+
+        with patch("fsb.engine.gateway_client.execute_action", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = {"success": True, "data": {}}
+            run = await runner.start("ws1", wf_data.get("wfId", "wf1"))
+        assert run.status == RunStatus.COMPLETED
+        _, kwargs = mock_exec.call_args
+        assert kwargs.get("connection_id") == ""
 
     @pytest.mark.asyncio
     async def test_connector_gateway_failure_fallback_stub(self):

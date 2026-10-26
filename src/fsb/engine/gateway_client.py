@@ -4,6 +4,7 @@ from typing import Any
 import httpx
 
 from ..config import fsb_config
+from .http_pool import acquire_client
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 async def list_connectors() -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connector/list"
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return resp.json()
@@ -37,7 +38,7 @@ async def execute_action(
         payload["connectionId"] = connection_id
 
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
             result = resp.json()
@@ -73,7 +74,7 @@ async def test_action(
         "testMode": True,
     }
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             return resp.json()
@@ -88,7 +89,7 @@ async def test_action(
 async def list_connections() -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connection"
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return resp.json()
@@ -118,7 +119,7 @@ async def create_connection(
         payload["expiresAt"] = expires_at
 
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             result = resp.json()
@@ -135,7 +136,7 @@ async def create_connection(
 async def get_connection(connection_id: str) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connection/{connection_id}"
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return resp.json()
@@ -150,7 +151,7 @@ async def get_connection(connection_id: str) -> dict[str, Any]:
 async def delete_connection(connection_id: str) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connection/{connection_id}"
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.delete(url)
             if resp.status_code == 204:
                 logger.info("gateway connection deleted: id=%s", connection_id)
@@ -168,7 +169,7 @@ async def delete_connection(connection_id: str) -> dict[str, Any]:
 async def refresh_connection(connection_id: str) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_GATEWAY_URL}/gateway/v1/connection/{connection_id}/refresh"
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url)
             resp.raise_for_status()
             result = resp.json()
@@ -198,7 +199,7 @@ async def initiate_oauth2(
     if scope:
         params["scope"] = scope
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             result = resp.json()
@@ -221,7 +222,7 @@ async def handle_oauth2_callback(
     if state:
         params["state"] = state
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             result = resp.json()

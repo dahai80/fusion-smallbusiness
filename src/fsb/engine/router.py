@@ -48,7 +48,7 @@ class IntentRouter:
             if score > best_score:
                 best_score = score
                 best_wf = wf
-        threshold = 0.4
+        threshold = 0.5
         if best_wf and best_score >= threshold:
             logger.info("natural match: '%s' -> %s score=%.2f", query, best_wf.wfId, best_score)
             return best_wf

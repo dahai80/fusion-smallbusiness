@@ -4,6 +4,7 @@ from typing import Any
 import httpx
 
 from ..config import fsb_config
+from .http_pool import acquire_client
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ async def create_external_artifact(
         payload["workflow_run_id"] = workflow_run_id
 
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             result = resp.json()
@@ -64,8 +65,8 @@ async def export_session(session_id: str, output_dir: str) -> dict[str, Any]:
         "params": {"session_id": session_id, "output_dir": output_dir},
     }
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT * 3) as client:
-            resp = await client.post(url, json=payload)
+        async with acquire_client(fsb_config.HTTP_TIMEOUT * 3) as client:
+            resp = await client.post(url, json=payload, timeout=fsb_config.HTTP_TIMEOUT * 3)
             resp.raise_for_status()
             result = resp.json()
             if "error" in result:
@@ -88,7 +89,7 @@ async def move_artifact_to_kb(artifact_id: str, project_id: str) -> dict[str, An
     url = f"{fsb_config.ARTIFACTS_ENGINE_URL}/api/v1/artifacts/{artifact_id}"
     payload = {"action": "move_to_kb", "project_id": project_id}
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             result = resp.json()
@@ -109,7 +110,7 @@ async def list_artifacts_by_source(source_module: str, workspace_id: str = "") -
     if workspace_id:
         params["workspace_id"] = workspace_id
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             result = resp.json()

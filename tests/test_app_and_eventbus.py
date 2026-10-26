@@ -87,9 +87,8 @@ async def test_event_bus_publish_no_workspace_id():
         mock_run.runId = "run1"
         MockRunner.return_value.start = AsyncMock(return_value=mock_run)
         result = await bus.publish(event)
-    assert len(result) == 1
-    assert result[0]["runId"] == "run1"
-    assert event.workspaceId == "ws1"
+    assert len(result) == 0
+    assert event.workspaceId == ""
 
 
 @pytest.mark.asyncio

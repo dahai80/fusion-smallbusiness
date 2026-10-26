@@ -1,6 +1,9 @@
+import csv
+import io
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from ..db.store import Store
 from ..models.common import ApprovalAction
@@ -119,11 +122,35 @@ async def execution_history(wsId: str, workflowId: str | None = None, offset: in
 
 
 @router.get("/execution/export")
-async def export_execution_log(wsId: str):
+async def export_execution_log(wsId: str, format: str = "json"):
     store = get_store()
     items = await store.list_runs(wsId)
-    logger.info("execution log exported for ws %s, %d records", wsId, len(items))
+    logger.info("execution log exported for ws %s, %d records format=%s", wsId, len(items), format)
+    if format.lower() == "csv":
+        return _export_csv(wsId, items)
     return {"workspaceId": wsId, "records": items, "count": len(items)}
+
+
+def _export_csv(wsId: str, items: list[dict]):
+    columns = ["runId", "workflowId", "status", "triggeredBy", "startTime", "endTime", "durationMs"]
+
+    def _row_gen():
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(columns)
+        yield buf.getvalue()
+        for rec in items:
+            buf = io.StringIO()
+            writer = csv.writer(buf)
+            writer.writerow([rec.get(col, "") for col in columns])
+            yield buf.getvalue()
+
+    logger.info("csv export: ws=%s rows=%d", wsId, len(items))
+    return StreamingResponse(
+        _row_gen(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=execution_log_{wsId}.csv"},
+    )
 
 
 @router.get("/execution/{runId}")

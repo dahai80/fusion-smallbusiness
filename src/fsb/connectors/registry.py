@@ -44,6 +44,9 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
                 ConnectorActionMeta(
                     actionKey="list_transactions", displayName="List Transactions", permission=ConnectorPermission.READ
                 ),
+                ConnectorActionMeta(
+                    actionKey="list_inventory", displayName="List Inventory", permission=ConnectorPermission.READ
+                ),
             ],
         ),
         ConnectorMeta(
@@ -226,6 +229,50 @@ def get_builtin_connectors() -> list[ConnectorMeta]:
                 ),
                 ConnectorActionMeta(
                     actionKey="create_invoice", displayName="Create Invoice", permission=ConnectorPermission.WRITE
+                ),
+            ],
+        ),
+        ConnectorMeta(
+            connectorKey="docusign",
+            displayName="DocuSign",
+            icon="docusign",
+            authType=AuthType.OAUTH2,
+            description="DocuSign e-signature & contracts",
+            readOnlyRecommend=False,
+            actions=[
+                ConnectorActionMeta(
+                    actionKey="list_envelopes", displayName="List Envelopes", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_envelope", displayName="Get Envelope", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="download_document", displayName="Download Document", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_envelope", displayName="Send Envelope", permission=ConnectorPermission.WRITE
+                ),
+            ],
+        ),
+        ConnectorMeta(
+            connectorKey="m365",
+            displayName="Microsoft 365",
+            icon="m365",
+            authType=AuthType.OAUTH2,
+            description="Microsoft 365 (timesheets, mail, files)",
+            readOnlyRecommend=False,
+            actions=[
+                ConnectorActionMeta(
+                    actionKey="list_timesheets", displayName="List Timesheets", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="get_timesheet", displayName="Get Timesheet", permission=ConnectorPermission.READ
+                ),
+                ConnectorActionMeta(
+                    actionKey="send_mail", displayName="Send Mail", permission=ConnectorPermission.WRITE
+                ),
+                ConnectorActionMeta(
+                    actionKey="read_file", displayName="Read File", permission=ConnectorPermission.READ
                 ),
             ],
         ),

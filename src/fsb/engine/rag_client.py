@@ -4,6 +4,7 @@ from typing import Any
 import httpx
 
 from ..config import fsb_config
+from .http_pool import acquire_client
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def _api_headers() -> dict[str, str]:
 async def list_knowledge_bases() -> dict[str, Any]:
     url = _rag_url("/kb/bases")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return {"success": True, "data": resp.json()}
@@ -48,7 +49,7 @@ async def create_knowledge_base(
         "embedding_model": embedding_model,
     }
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.post(url, json=payload, headers=_api_headers())
             resp.raise_for_status()
             result = resp.json()
@@ -65,7 +66,7 @@ async def create_knowledge_base(
 async def get_knowledge_base(kb_id: str) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return {"success": True, "data": resp.json()}
@@ -80,7 +81,7 @@ async def get_knowledge_base(kb_id: str) -> dict[str, Any]:
 async def delete_knowledge_base(kb_id: str) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.delete(url, headers=_api_headers())
             resp.raise_for_status()
             result = resp.json()
@@ -97,7 +98,7 @@ async def delete_knowledge_base(kb_id: str) -> dict[str, Any]:
 async def get_knowledge_base_stats(kb_id: str) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}/stats")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return {"success": True, "data": resp.json()}
@@ -120,8 +121,8 @@ async def upload_document(
         "contextualize": contextualize,
     }
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT * 3) as client:
-            resp = await client.post(url, json=payload, headers=_api_headers())
+        async with acquire_client(fsb_config.HTTP_TIMEOUT * 3) as client:
+            resp = await client.post(url, json=payload, headers=_api_headers(), timeout=fsb_config.HTTP_TIMEOUT * 3)
             resp.raise_for_status()
             result = resp.json()
             logger.info(
@@ -147,8 +148,8 @@ async def upload_documents_batch(
         "contextualize": contextualize,
     }
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT * 5) as client:
-            resp = await client.post(url, json=payload, headers=_api_headers())
+        async with acquire_client(fsb_config.HTTP_TIMEOUT * 5) as client:
+            resp = await client.post(url, json=payload, headers=_api_headers(), timeout=fsb_config.HTTP_TIMEOUT * 5)
             resp.raise_for_status()
             result = resp.json()
             logger.info("rag batch upload: kb=%s indexed=%d", kb_id, result.get("indexed", 0))
@@ -164,7 +165,7 @@ async def upload_documents_batch(
 async def list_documents(kb_id: str) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}/documents")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return {"success": True, "data": resp.json()}
@@ -179,7 +180,7 @@ async def list_documents(kb_id: str) -> dict[str, Any]:
 async def delete_document(kb_id: str, doc_id: str) -> dict[str, Any]:
     url = _rag_url(f"/kb/bases/{kb_id}/documents/{doc_id}")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.delete(url, headers=_api_headers())
             resp.raise_for_status()
             result = resp.json()
@@ -214,8 +215,8 @@ async def search(
         payload["folder_prefix"] = folder_prefix
 
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT * 2) as client:
-            resp = await client.post(url, json=payload)
+        async with acquire_client(fsb_config.HTTP_TIMEOUT * 2) as client:
+            resp = await client.post(url, json=payload, timeout=fsb_config.HTTP_TIMEOUT * 2)
             resp.raise_for_status()
             results = resp.json()
             logger.info("rag search: kb=%s query=%s results=%d", kb_id, query[:50], len(results))
@@ -253,8 +254,8 @@ async def ask(
         payload["history"] = history
 
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT * 3) as client:
-            resp = await client.post(url, json=payload)
+        async with acquire_client(fsb_config.HTTP_TIMEOUT * 3) as client:
+            resp = await client.post(url, json=payload, timeout=fsb_config.HTTP_TIMEOUT * 3)
             resp.raise_for_status()
             result = resp.json()
             logger.info("rag ask: kb=%s question=%s sources=%d", kb_id, question[:50], len(result.get("sources", [])))
@@ -270,7 +271,7 @@ async def ask(
 async def rag_health() -> dict[str, Any]:
     url = _rag_url("/kb/status")
     try:
-        async with httpx.AsyncClient(timeout=fsb_config.HTTP_TIMEOUT) as client:
+        async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return {"success": True, "data": resp.json()}

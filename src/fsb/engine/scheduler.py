@@ -1,8 +1,12 @@
+import contextlib
 import logging
+import os
+import socket
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+from ..config import fsb_config
 from ..db.store import Store
 from ..models.common import ScheduleType, TriggerType
 from ..models.workflow import Workflow
@@ -10,19 +14,64 @@ from ..models.workflow import Workflow
 logger = logging.getLogger(__name__)
 
 
+def _default_holder() -> str:
+    return f"fsb:{socket.gethostname()}:{os.getpid()}"
+
+
 class WorkflowScheduler:
-    def __init__(self, store: Store):
+    def __init__(self, store: Store, holder: str | None = None):
         self.store = store
+        self.holder = holder or _default_holder()
         self._scheduler = AsyncIOScheduler()
         self._jobs: dict[str, str] = {}
+        self._leader_ttl = max(5, fsb_config.SCHEDULER_LEADER_TTL)
+        self._leader_renewal_job = None
 
     def start(self):
         self._scheduler.start()
-        logger.info("scheduler started")
+        logger.info("scheduler started (holder=%s)", self.holder)
 
     def stop(self):
+        if self._leader_renewal_job:
+            with contextlib.suppress(Exception):
+                self._scheduler.remove_job(self._leader_renewal_job)
+            self._leader_renewal_job = None
         self._scheduler.shutdown(wait=False)
         logger.info("scheduler stopped")
+
+    async def _renew_leadership(self):
+        try:
+            ok = await self.store.renew_leader(self.holder, self._leader_ttl)
+            if not ok:
+                logger.info("leadership lost, attempting re-acquire (holder=%s)", self.holder)
+                await self.store.try_acquire_leader(self.holder, self._leader_ttl)
+        except Exception as e:
+            logger.warning("leader renewal failed: %s", e)
+
+    async def ensure_leadership(self) -> bool:
+        try:
+            acquired = await self.store.try_acquire_leader(self.holder, self._leader_ttl)
+            if acquired and self._leader_renewal_job is None:
+                renew_interval = max(2, self._leader_ttl // 3)
+                self._leader_renewal_job = self._scheduler.add_job(
+                    self._renew_leadership,
+                    "interval",
+                    seconds=renew_interval,
+                    id="fsb_leader_renewal",
+                    replace_existing=True,
+                ).id
+                logger.info("leadership acquired (holder=%s ttl=%ds)", self.holder, self._leader_ttl)
+            return acquired
+        except Exception as e:
+            logger.warning("leader acquire failed: %s", e)
+            return False
+
+    async def is_leader(self) -> bool:
+        try:
+            return await self.store.is_leader(self.holder)
+        except Exception as e:
+            logger.warning("is_leader check failed: %s", e)
+            return False
 
     async def register(self, ws_id: str, wf_id: str):
         data = await self.store.get_workflow(wf_id)
@@ -65,6 +114,9 @@ class WorkflowScheduler:
             logger.info("cron unregistered: wf %s", wf_id)
 
     async def _run_scheduled_workflow(self, ws_id: str, wf_id: str):
+        if not await self.is_leader():
+            logger.debug("non-leader skipping scheduled run: ws %s wf %s (holder=%s)", ws_id, wf_id, self.holder)
+            return
         logger.info("scheduled run triggered: ws %s wf %s", ws_id, wf_id)
         from .runner import WorkflowRunner
 
