@@ -2,7 +2,7 @@
 
 [中文文档](README_CN.md)
 
-> **Version 0.2.0rc1** — Enterprise release candidate. Single-node + multi-node (Postgres) production-ready. See [Changelog](#changelog).
+> **Version 0.2.0** — Enterprise release. Single-node + multi-node (Postgres) production-ready. See [Changelog](#changelog).
 
 Cross-SaaS intelligent business workspace for small business owners and teams.
 
@@ -375,6 +375,13 @@ source .venv/bin/activate
 ```
 
 ## Changelog
+
+### 0.2.0 (2026-10-26) — Enterprise Release
+
+Finalizes 0.2.0rc1 with CI fix (issue #27):
+
+- CI green again — workflow installs pinned `fusion-core@v0.5.0` from GitHub before editable install (was failing: `fusion-core>=0.4.0` not on PyPI).
+- No code changes vs 0.2.0rc1.
 
 ### 0.2.0rc1 (2026-09-04) — Enterprise Release Candidate
 

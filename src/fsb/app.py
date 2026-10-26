@@ -234,7 +234,7 @@ async def _register_existing_cron_jobs(scheduler, store):
 
 app = FastAPI(
     title="Fusion Small Business",
-    version="0.2.0rc1",
+    version="0.2.0",
     description="Cross-SaaS intelligent business workspace API",
     lifespan=lifespan,
 )
