@@ -2,7 +2,7 @@
 
 [中文文档](README_CN.md)
 
-> **Version 0.2.0** — Enterprise release. Single-node + multi-node (Postgres) production-ready. See [Changelog](#changelog).
+> **Version 0.2.1** — Enterprise release. Single-node + multi-node (Postgres) production-ready. See [Changelog](#changelog).
 
 Cross-SaaS intelligent business workspace for small business owners and teams.
 
@@ -375,6 +375,15 @@ source .venv/bin/activate
 ```
 
 ## Changelog
+
+### 0.2.1 (2026-10-28) — Patch Release
+
+Process title + config governance (issues #29, #30):
+
+- Process title — `ps`/Activity Monitor now shows `fusion-smallbusiness serve :11490` instead of bare `Python`, via `fusion_core.proc.set_process_title` (safe fallback when `setproctitle` is missing).
+- Config single-point resolution (config Phase 2.2) — adopts `fusion_core.config` helpers: `FUSION_GATEWAY_BASE_URL` (canonical gateway address), `FUSION_SMALLBUSINESS_PORT`, `FUSION_SMALLBUSINESS_DATA_DIR`. Legacy `FSB_*` env vars still honored as fallback — no behavior change.
+- LLM calls now authenticate with `FUSION_CLIENT_KEY` (`Authorization: Bearer`) resolved via `fusion_core.config.client_key()` — dev missing key = anonymous + warning; `FUSION_PROFILE=prod` missing key = RuntimeError.
+- Dependency: `fusion-core>=0.7.0`, `setproctitle>=1.3.0`; CI pins `fusion-core@v0.7.0`.
 
 ### 0.2.0 (2026-10-26) — Enterprise Release
 

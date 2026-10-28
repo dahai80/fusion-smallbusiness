@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 import httpx
+from fusion_core.config import client_key
 
 from ..config import fsb_config
 from .http_pool import acquire_client
@@ -10,11 +11,18 @@ from .http_pool import acquire_client
 logger = logging.getLogger(__name__)
 
 
+def _auth_headers() -> dict[str, str]:
+    key = client_key()
+    if not key:
+        return {}
+    return {"Authorization": f"Bearer {key}"}
+
+
 async def list_models() -> dict[str, Any]:
     url = f"{fsb_config.FUSION_MLX_URL}/v1/models"
     try:
         async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
-            resp = await client.get(url, timeout=fsb_config.HTTP_TIMEOUT)
+            resp = await client.get(url, headers=_auth_headers(), timeout=fsb_config.HTTP_TIMEOUT)
             resp.raise_for_status()
             result = resp.json()
             logger.info("llm list models: count=%d", len(result.get("data", [])))
@@ -31,7 +39,7 @@ async def get_model_info(model_id: str) -> dict[str, Any]:
     url = f"{fsb_config.FUSION_MLX_URL}/v1/models"
     try:
         async with acquire_client(fsb_config.HTTP_TIMEOUT) as client:
-            resp = await client.get(url, timeout=fsb_config.HTTP_TIMEOUT)
+            resp = await client.get(url, headers=_auth_headers(), timeout=fsb_config.HTTP_TIMEOUT)
             resp.raise_for_status()
             models = resp.json().get("data", [])
             for m in models:
@@ -60,7 +68,7 @@ async def create_embedding(
     }
     try:
         async with acquire_client(fsb_config.HTTP_TIMEOUT * 2) as client:
-            resp = await client.post(url, json=payload, timeout=fsb_config.HTTP_TIMEOUT * 2)
+            resp = await client.post(url, json=payload, headers=_auth_headers(), timeout=fsb_config.HTTP_TIMEOUT * 2)
             resp.raise_for_status()
             result = resp.json()
             logger.info("llm embedding: model=%s count=%d", model, len(result.get("data", [])))
@@ -93,7 +101,7 @@ async def chat_completion(
 
     try:
         async with acquire_client(fsb_config.HTTP_TIMEOUT * 2) as client:
-            resp = await client.post(url, json=payload, timeout=fsb_config.HTTP_TIMEOUT * 2)
+            resp = await client.post(url, json=payload, headers=_auth_headers(), timeout=fsb_config.HTTP_TIMEOUT * 2)
             resp.raise_for_status()
             result = resp.json()
             logger.info("llm completion: model=%s tokens=%s", model, result.get("usage", {}))

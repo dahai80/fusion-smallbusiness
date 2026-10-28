@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-> **版本 0.2.0** — 企业级发布。单节点 + 多节点（Postgres）生产就绪。见 [更新日志](#更新日志)。
+> **版本 0.2.1** — 企业级发布。单节点 + 多节点（Postgres）生产就绪。见 [更新日志](#更新日志)。
 
 面向小微企业主/小团队的跨 SaaS 智能业务工作台。
 
@@ -374,6 +374,15 @@ source .venv/bin/activate
 ```
 
 ## 更新日志
+
+### 0.2.1 (2026-10-28) — 补丁发布
+
+进程标题 + 配置治理（issue #29、#30）：
+
+- 进程标题 — `ps`/活动监视器现在显示 `fusion-smallbusiness serve :11490` 而非裸 `Python`，经 `fusion_core.proc.set_process_title`（缺 `setproctitle` 时安全回退）。
+- 配置单点解析（config Phase 2.2）— 采纳 `fusion_core.config` 助手：`FUSION_GATEWAY_BASE_URL`（规范 gateway 地址）、`FUSION_SMALLBUSINESS_PORT`、`FUSION_SMALLBUSINESS_DATA_DIR`。旧 `FSB_*` 变量仍作兜底 — 无行为变化。
+- LLM 调用改用 `FUSION_CLIENT_KEY`（`Authorization: Bearer`）经 `fusion_core.config.client_key()` 解析 — dev 缺 key = 匿名 + 警告；`FUSION_PROFILE=prod` 缺 key = RuntimeError。
+- 依赖：`fusion-core>=0.7.0`、`setproctitle>=1.3.0`；CI 固定 `fusion-core@v0.7.0`。
 
 ### 0.2.0 (2026-10-26) — 企业级发布
 
