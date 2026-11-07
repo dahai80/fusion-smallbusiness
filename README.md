@@ -381,7 +381,7 @@ The plugin provides three panels:
 
 ## Design Docs
 
-- [PRD & Plan Document](../architecture/fusion-smallbusiness-prd-plan.md)
+- PRD & Plan Document: `architecture/fusion-smallbusiness-prd-plan.md` in the Fusion monorepo workspace root (not part of this repository)
 
 ## Environment Setup
 

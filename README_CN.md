@@ -380,7 +380,7 @@ FSB 通过 fusion-studio 的 Plugin 机制提供前端集成，插件位于：
 
 ## 设计文档
 
-- [PRD 与方案文档](../architecture/fusion-smallbusiness-prd-plan.md)
+- PRD 与方案文档：Fusion monorepo 工作区根目录下的 `architecture/fusion-smallbusiness-prd-plan.md`（不属于本仓库）
 
 ## 环境设置
 
