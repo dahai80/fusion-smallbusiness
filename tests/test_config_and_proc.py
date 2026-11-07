@@ -1,4 +1,3 @@
-
 import pytest
 
 from fsb.config import _resolve_db_path, _resolve_mlx_url, _resolve_server_port

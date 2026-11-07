@@ -7,7 +7,7 @@ doc_type: changelog
 title: { zh: "fusion-smallbusiness 变更日志", en: "fusion-smallbusiness changelog" }
 audience: engineer
 status: draft
-version: 0.2.1
+version: 0.2.2
 updated: 2026-11-07
 owner: @dahai
 source_of_truth:
@@ -16,9 +16,9 @@ source_of_truth:
 
 # Changelog
 
-## Unreleased
+## 0.2.2
 
-- docs: adopt fusion docs-system v1.1 contract (app x service) — added docs/product-page.md, docs/get-started.md, docs/api-reference.md, docs/config-reference.md, docs/architecture.md, docs/troubleshooting.md and ci/validate_docs.py; added contract frontmatter to README.md, README_CN.md, AGENTS.md, CLAUDE.md.
+- docs (PR #32): adopt fusion docs-system v1.1 contract (app x service) — added docs/product-page.md, docs/get-started.md, docs/api-reference.md, docs/config-reference.md, docs/architecture.md, docs/troubleshooting.md and ci/validate_docs.py; added contract frontmatter to README.md, README_CN.md, AGENTS.md, CLAUDE.md.
 
 ## 0.2.1
 
