@@ -1,3 +1,19 @@
+---
+doc_id: fusion-smallbusiness/readme-cn
+product: fusion-smallbusiness
+class: app
+entry: service
+doc_type: readme
+title: { zh: "fusion-smallbusiness 说明（中文）", en: "fusion-smallbusiness readme (Chinese)" }
+audience: engineer
+status: draft
+version: 0.2.1
+updated: 2026-11-07
+owner: @dahai
+source_of_truth:
+  - README_CN.md
+---
+
 # Fusion Small Business
 
 [English](README.md)
@@ -364,7 +380,7 @@ FSB 通过 fusion-studio 的 Plugin 机制提供前端集成，插件位于：
 
 ## 设计文档
 
-- [PRD 与方案文档](../architecture/fusion-smallbusiness-prd-plan.md)
+- PRD 与方案文档：Fusion monorepo 工作区根目录下的 `architecture/fusion-smallbusiness-prd-plan.md`（不属于本仓库）
 
 ## 环境设置
 
