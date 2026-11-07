@@ -1,3 +1,19 @@
+---
+doc_id: fusion-smallbusiness/readme
+product: fusion-smallbusiness
+class: app
+entry: service
+doc_type: readme
+title: { zh: "fusion-smallbusiness 说明", en: "fusion-smallbusiness readme" }
+audience: engineer
+status: draft
+version: 0.2.1
+updated: 2026-11-07
+owner: @dahai
+source_of_truth:
+  - README.md
+---
+
 # Fusion Small Business
 
 [中文文档](README_CN.md)
