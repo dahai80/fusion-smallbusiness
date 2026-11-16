@@ -7,7 +7,7 @@ doc_type: changelog
 title: { zh: "fusion-smallbusiness 变更日志", en: "fusion-smallbusiness changelog" }
 audience: engineer
 status: draft
-version: 0.2.2
+version: 0.2.3
 updated: 2026-11-07
 owner: "@dahai"
 source_of_truth:
@@ -15,6 +15,10 @@ source_of_truth:
 ---
 
 # Changelog
+
+## 0.2.3
+
+- ci (issue #34): add concurrency cancel-in-progress grouped by ref to CI and docs workflows; pip dependency cache keyed on pyproject.toml; paths-ignore for docs-only changes in CI; assessments: no test sharding (suite < 1 min), no nightly tier needed (per-PR CI already authoritative)
 
 ## 0.2.2
 
