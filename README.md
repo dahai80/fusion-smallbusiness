@@ -172,13 +172,14 @@ All endpoints prefixed with `/api/v1/fsb`
 
 ```bash
 cd /path/to/fusion-smallbusiness
-source .venv/bin/activate
+source /Users/dahai/fusion/.venv/bin/activate   # shared monorepo venv (Python 3.12) — this repo does NOT keep a local .venv
 
-# Start the server (default port 11490, configurable via FSB_SERVER_PORT)
+# Start the server via the lifecycle script (port 11490, registered in port-registry.yaml)
+./start.sh start    # subcommands: start|stop|status|restart|doctor|log
+# or directly (default port 11490, configurable via FSB_SERVER_PORT):
 fusion-smallbusiness
-# or: uvicorn fsb.app:app --host 0.0.0.0 --port 11490
 
-# Run tests (307 tests, 95% coverage)
+# Run tests (341 tests)
 pytest tests/ -v
 
 # Run tests with coverage report
@@ -385,9 +386,13 @@ The plugin provides three panels:
 
 ## Environment Setup
 
+This repository does **not** maintain a project-local virtualenv. It uses the shared monorepo venv at the Fusion workspace root (`/Users/dahai/fusion/.venv`, Python 3.12, synced by `scripts/sync-deps.sh`). Project-local `.venv/` directories are gitignored and must not be created.
+
 ```bash
-cd /path/to/fusion-smallbusiness
+cd /Users/dahai/fusion
 source .venv/bin/activate
+cd fusion-smallbusiness
+pip install -e ".[dev]"
 ```
 
 ## Changelog

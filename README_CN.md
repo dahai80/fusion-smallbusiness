@@ -171,13 +171,14 @@ tests/
 
 ```bash
 cd /path/to/fusion-smallbusiness
-source .venv/bin/activate
+source /Users/dahai/fusion/.venv/bin/activate   # 共享 monorepo venv（Python 3.12）— 本仓库不使用本地 .venv
 
-# 启动服务（默认端口 11490，可通过 FSB_SERVER_PORT 配置）
+# 通过生命周期脚本启动服务（端口 11490，已登记 port-registry.yaml）
+./start.sh start    # 子命令: start|stop|status|restart|doctor|log
+# 或直接启动（默认端口 11490，可通过 FSB_SERVER_PORT 配置）:
 fusion-smallbusiness
-# 或: uvicorn fsb.app:app --host 0.0.0.0 --port 11490
 
-# 运行测试（307 用例，覆盖率 95%）
+# 运行测试（341 用例）
 pytest tests/ -v
 
 # 运行测试 + 覆盖率报告
@@ -384,9 +385,13 @@ FSB 通过 fusion-studio 的 Plugin 机制提供前端集成，插件位于：
 
 ## 环境设置
 
+本仓库**不**维护项目本地虚拟环境，统一使用 Fusion 工作区根目录的共享 venv（`/Users/dahai/fusion/.venv`，Python 3.12，由 `scripts/sync-deps.sh` 同步）。项目本地 `.venv/` 目录已被 gitignore，禁止创建。
+
 ```bash
-cd /path/to/fusion-smallbusiness
+cd /Users/dahai/fusion
 source .venv/bin/activate
+cd fusion-smallbusiness
+pip install -e ".[dev]"
 ```
 
 ## 更新日志
