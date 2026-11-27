@@ -1,6 +1,10 @@
 CLAUDE.md
 PLAN.md
 
+# Virtual environments (repo uses the shared monorepo venv at /Users/dahai/fusion/.venv)
+.venv/
+venv/
+
 # Python bytecode
 __pycache__/
 *.py[cod]
@@ -22,6 +26,10 @@ htmlcov/
 # Runtime data (SQLite stores)
 *.db
 test_fsb_data.db
+
+# Service runtime artifacts (start.sh)
+logs/
+.fusion-smallbusiness.pid
 
 # Misc
 .DS_Store

@@ -240,7 +240,14 @@ async def test_template_crud(client, ws):
 
 
 @pytest.mark.asyncio
-async def test_external_webhook_register(client):
+async def test_external_webhook_register(client, monkeypatch):
+    # Fake DNS at the socket boundary so the SSRF guard runs without live network.
+    import socket
+
+    def _fake_getaddrinfo(host, *args, **kwargs):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+
+    monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo)
     resp = await client.post(
         "/api/v1/fsb/external/webhook/register",
         json={"workspaceId": "ws_test", "url": "https://example.com/hook"},
